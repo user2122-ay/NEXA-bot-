@@ -6,24 +6,23 @@ export const data = new SlashCommandBuilder()
   .addStringOption(option =>
     option.setName("titulo")
       .setDescription("Título del embed")
-      .setRequired(false)
   )
   .addStringOption(option =>
     option.setName("descripcion")
       .setDescription("Contenido del embed")
-      .setRequired(false)
   )
   .addStringOption(option =>
     option.setName("color")
-      .setDescription("Color en HEX (ej: #5865F2)")
-      .setRequired(false)
+      .setDescription("Color HEX (#5865F2)")
   )
   .addStringOption(option =>
     option.setName("imagen")
-      .setDescription("URL de la imagen")
-      .setRequired(false)
+      .setDescription("URL de la imagen grande")
   )
-  // 🔒 Solo admins
+  .addStringOption(option =>
+    option.setName("icono")
+      .setDescription("URL del icono pequeño (thumbnail)")
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 export async function execute(interaction) {
@@ -31,25 +30,26 @@ export async function execute(interaction) {
   const descripcion = interaction.options.getString("descripcion");
   const color = interaction.options.getString("color") || "#2b2d31";
   const imagen = interaction.options.getString("imagen");
+  const icono = interaction.options.getString("icono");
 
-  // 🔒 Seguridad extra
   if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({
-      content: "❌ No tienes permisos para usar este comando",
+      content: "❌ No tienes permisos",
       ephemeral: true
     });
   }
 
   const embed = new EmbedBuilder()
     .setColor(color)
-    .setFooter({
-      text: "NEXA • DEVWORKS STUDIOS"
-    })
+    .setFooter({ text: "NEXA • DEVWORKS STUDIOS" })
     .setTimestamp();
 
   if (titulo) embed.setTitle(titulo);
   if (descripcion) embed.setDescription(descripcion);
-  if (imagen) embed.setImage(imagen);
+
+  // 🔥 LAS DOS COSAS
+  if (imagen) embed.setImage(imagen);       // imagen grande
+  if (icono) embed.setThumbnail(icono);    // icono pequeño
 
   await interaction.reply({
     content: "✅ Embed enviado",

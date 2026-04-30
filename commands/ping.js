@@ -1,24 +1,19 @@
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+import { SlashCommandBuilder } from "discord.js";
 
-  if (interaction.commandName === "ping") {
-    const sent = await interaction.reply({
-      content: "🏓 Calculando ping...",
-      fetchReply: true
-    });
+export const data = new SlashCommandBuilder()
+  .setName("ping")
+  .setDescription("Responde con pong");
 
-    const latency = sent.createdTimestamp - interaction.createdTimestamp;
-    const apiPing = Math.round(client.ws.ping);
+export async function execute(interaction) {
+  const sent = await interaction.reply({
+    content: "🏓 Calculando ping...",
+    fetchReply: true
+  });
 
-    await interaction.editReply(
-      `🏓 **Pong!**\n📡 Latencia: ${latency}ms\n⚡ API: ${apiPing}ms`
-    );
-  }
+  const latency = sent.createdTimestamp - interaction.createdTimestamp;
+  const apiPing = Math.round(interaction.client.ws.ping);
 
-  if (interaction.commandName === "help") {
-    await interaction.reply({
-      content: "📖 Usa `/ping` para probar el bot.\nMás comandos próximamente...",
-      ephemeral: true
-    });
-  }
-});
+  await interaction.editReply(
+    `🏓 Pong!\n📡 Latencia: ${latency}ms\n⚡ API: ${apiPing}ms`
+  );
+}

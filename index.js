@@ -28,7 +28,25 @@ for (const file of commandFiles) {
   commands.push(command.data.toJSON());
 }
 
-// 🚀 READY
+//
+// 🔥 NUEVO: CARGAR EVENTOS
+//
+const eventsPath = path.resolve("./events");
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
+
+for (const file of eventFiles) {
+  const event = await import(`./events/${file}`);
+
+  if (event.default.once) {
+    client.once(event.default.name, (...args) => event.default.execute(...args));
+  } else {
+    client.on(event.default.name, (...args) => event.default.execute(...args));
+  }
+}
+
+//
+// 🚀 READY (solo para registrar comandos)
+//
 client.once("ready", async () => {
   console.log(`🔥 NEXA está en línea como ${client.user.tag}`);
 
@@ -48,7 +66,9 @@ client.once("ready", async () => {
   }
 });
 
-// 🎛️ EJECUTAR COMANDOS
+//
+// 🎛️ INTERACCIONES (COMANDOS)
+//
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 

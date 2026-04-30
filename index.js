@@ -1,56 +1,64 @@
-import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { Client, GatewayIntentBits, REST, Routes, Collection } from "discord.js";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
 });
 
-const commands = [
-  new SlashCommandBuilder()
-    .setName("ping")
-    .setDescription("Responde con pong"),
+client.commands = new Collection();
 
-  new SlashCommandBuilder()
-    .setName("help")
-    .setDescription("Muestra los comandos disponibles")
-];
+// 📂 Leer comandos automáticamente
+const commands = [];
+const commandsPath = path.resolve("./commands");
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
 
-// 🔐 Registrar comandos automáticamente
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+for (const file of commandFiles) {
+  const filePath = `./commands/${file}`;
+  const command = await import(filePath);
 
-(async () => {
+  client.commands.set(command.data.name, command);
+  commands.push(command.data.toJSON());
+}
+
+// 🚀 Cuando el bot esté listo
+client.once("ready", async () => {
+  console.log(`🔥 NEXA está en línea como ${client.user.tag}`);
+
   try {
+    const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+
     console.log("🔄 Registrando comandos slash...");
 
+    // ⚡ CAMBIA ESTO SEGÚN NECESITES
     await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: commands.map(cmd => cmd.toJSON()) }
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+      { body: commands }
     );
 
     console.log("✅ Comandos registrados correctamente");
   } catch (error) {
     console.error(error);
   }
-})();
-
-// 🚀 Evento ready
-client.once("ready", () => {
-  console.log(`🔥 NEXA está en línea como ${client.user.tag}`);
 });
 
-// 🎛️ Interacciones
+// 🎛️ Manejo de comandos
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "ping") {
-    await interaction.reply("🏓 Pong!");
-  }
+  const command = client.commands.get(interaction.commandName);
 
-  if (interaction.commandName === "help") {
+  if (!command) return;
+
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
     await interaction.reply({
-      content: "📖 Usa `/ping` para probar el bot.\nMás comandos próximamente...",
+      content: "❌ Error ejecutando el comando",
       ephemeral: true
     });
   }

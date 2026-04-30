@@ -1,28 +1,73 @@
-import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
+import { Client, GatewayIntentBits, REST, Routes, Collection } from "discord.js";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 dotenv.config();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
 });
 
+client.commands = new Collection();
+
+// 📂 CARGAR COMANDOS
+const commands = [];
+const commandsPath = path.resolve("./commands");
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+
+for (const file of commandFiles) {
+  const command = await import(`./commands/${file}`);
+
+  if (!command.data || !command.execute) {
+    console.log(`⚠️ El archivo ${file} está mal hecho`);
+    continue;
+  }
+
+  client.commands.set(command.data.name, command);
+  commands.push(command.data.toJSON());
+}
+
+// 🚀 READY
 client.once("ready", async () => {
-  console.log(`🧹 Limpiando comandos como ${client.user.tag}...`);
+  console.log(`🔥 NEXA está en línea como ${client.user.tag}`);
 
   try {
     const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
-    // 🔥 BORRAR TODOS LOS COMANDOS GLOBALES
+    console.log("🔄 Registrando comandos globales...");
+
     await rest.put(
       Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: [] }
+      { body: commands }
     );
 
-    console.log("✅ TODOS los comandos globales fueron eliminados");
+    console.log("✅ Comandos globales registrados");
   } catch (error) {
     console.error(error);
   }
 });
 
+// 🎛️ EJECUTAR COMANDOS
+client.on("interactionCreate", async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const command = client.commands.get(interaction.commandName);
+  if (!command) return;
+
+  try {
+    await command.execute(interaction);
+  } catch (error) {
+    console.error(error);
+
+    if (!interaction.replied) {
+      await interaction.reply({
+        content: "❌ Error ejecutando el comando",
+        ephemeral: true
+      });
+    }
+  }
+});
+
+// 🔑 LOGIN
 client.login(process.env.TOKEN);

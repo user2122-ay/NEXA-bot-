@@ -4,27 +4,24 @@ export default {
   name: "guildMemberAdd",
   async execute(member) {
     try {
-      const res = await pool.query(
+      const { rows } = await pool.query(
         "SELECT * FROM autoroles WHERE guild_id = $1",
         [member.guild.id]
       );
 
-      const data = res.rows[0];
-      if (!data) return;
+      if (!rows[0]) return;
 
       const roles = member.user.bot
-        ? (Array.isArray(data.bot_roles) ? data.bot_roles : [])
-        : (Array.isArray(data.user_roles) ? data.user_roles : []);
+        ? rows[0].bot_roles
+        : rows[0].user_roles;
 
-      for (const roleId of roles) {
-        const role = member.guild.roles.cache.get(roleId);
-        if (role) {
-          await member.roles.add(role).catch(() => {});
-        }
+      for (const id of roles) {
+        const role = member.guild.roles.cache.get(id);
+        if (role) await member.roles.add(role).catch(() => {});
       }
 
-    } catch (error) {
-      console.error("ERROR AUTOROLE EVENT:", error);
+    } catch (err) {
+      console.error("EVENT ERROR:", err);
     }
   }
 };

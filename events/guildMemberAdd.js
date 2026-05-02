@@ -3,21 +3,28 @@ import pool from "../database.js";
 export default {
   name: "guildMemberAdd",
   async execute(member) {
-    const res = await pool.query(
-      "SELECT * FROM autoroles WHERE guild_id = $1",
-      [member.guild.id]
-    );
+    try {
+      const res = await pool.query(
+        "SELECT * FROM autoroles WHERE guild_id = $1",
+        [member.guild.id]
+      );
 
-    const data = res.rows[0];
-    if (!data) return;
+      const data = res.rows[0];
+      if (!data) return;
 
-    const roles = member.user.bot ? data.bot_roles : data.user_roles;
+      const roles = member.user.bot
+        ? (Array.isArray(data.bot_roles) ? data.bot_roles : [])
+        : (Array.isArray(data.user_roles) ? data.user_roles : []);
 
-    for (const roleId of roles) {
-      const role = member.guild.roles.cache.get(roleId);
-      if (role) {
-        await member.roles.add(role).catch(() => {});
+      for (const roleId of roles) {
+        const role = member.guild.roles.cache.get(roleId);
+        if (role) {
+          await member.roles.add(role).catch(() => {});
+        }
       }
+
+    } catch (error) {
+      console.error("ERROR AUTOROLE EVENT:", error);
     }
   }
 };

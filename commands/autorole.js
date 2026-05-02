@@ -8,9 +8,7 @@ export const data = new SlashCommandBuilder()
     sub.setName("add")
       .setDescription("Añadir autorole")
       .addRoleOption(option =>
-        option.setName("rol")
-          .setDescription("Rol a añadir")
-          .setRequired(true)
+        option.setName("rol").setDescription("Rol").setRequired(true)
       )
       .addStringOption(option =>
         option.setName("tipo")
@@ -23,16 +21,13 @@ export const data = new SlashCommandBuilder()
       )
   )
   .addSubcommand(sub =>
-    sub.setName("list")
-      .setDescription("Ver autoroles")
+    sub.setName("list").setDescription("Ver autoroles")
   )
   .addSubcommand(sub =>
     sub.setName("remove")
       .setDescription("Eliminar autorole")
       .addRoleOption(option =>
-        option.setName("rol")
-          .setDescription("Rol a eliminar")
-          .setRequired(true)
+        option.setName("rol").setDescription("Rol").setRequired(true)
       )
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
@@ -40,98 +35,108 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction) {
   const guildId = interaction.guild.id;
 
-  // 🔍 Buscar config
-  let result = await pool.query(
-    "SELECT * FROM autoroles WHERE guild_id = $1",
-    [guildId]
-  );
-
-  let data = result.rows[0];
-
-  // 🆕 Crear si no existe
-  if (!data) {
-    await pool.query(
-      "INSERT INTO autoroles (guild_id) VALUES ($1)",
-      [guildId]
-    );
-
-    result = await pool.query(
+  try {
+    // 🔍 Buscar config
+    let result = await pool.query(
       "SELECT * FROM autoroles WHERE guild_id = $1",
       [guildId]
     );
 
-    data = result.rows[0];
-  }
+    let data = result.rows[0];
 
-  const sub = interaction.options.getSubcommand();
+    // 🆕 Crear si no existe
+    if (!data) {
+      await pool.query(
+        "INSERT INTO autoroles (guild_id) VALUES ($1)",
+        [guildId]
+      );
 
-  // ➕ ADD
-  if (sub === "add") {
-    const role = interaction.options.getRole("rol");
-    const tipo = interaction.options.getString("tipo");
+      result = await pool.query(
+        "SELECT * FROM autoroles WHERE guild_id = $1",
+        [guildId]
+      );
 
-    let roles = tipo === "user" ? data.user_roles : data.bot_roles;
+      data = result.rows[0];
+    }
 
-    if (tipo === "user" && roles.length >= 5) {
+    // 🛡️ PROTECCIÓN
+    const userRolesDB = data?.user_roles || [];
+    const botRolesDB = data?.bot_roles || [];
+
+    const sub = interaction.options.getSubcommand();
+
+    // ➕ ADD
+    if (sub === "add") {
+      const role = interaction.options.getRole("rol");
+      const tipo = interaction.options.getString("tipo");
+
+      let roles = tipo === "user" ? userRolesDB : botRolesDB;
+
+      if (tipo === "user" && roles.length >= 5) {
+        return interaction.reply({ content: "❌ Máximo 5 roles usuarios", ephemeral: true });
+      }
+
+      if (tipo === "bot" && roles.length >= 2) {
+        return interaction.reply({ content: "❌ Máximo 2 roles bots", ephemeral: true });
+      }
+
+      if (roles.includes(role.id)) {
+        return interaction.reply({ content: "❌ Ya existe ese rol", ephemeral: true });
+      }
+
+      roles.push(role.id);
+
+      await pool.query(
+        `UPDATE autoroles SET ${tipo === "user" ? "user_roles" : "bot_roles"} = $1 WHERE guild_id = $2`,
+        [roles, guildId]
+      );
+
       return interaction.reply({
-        content: "❌ Máximo 5 roles para usuarios",
+        content: `✅ Rol ${role} añadido (${tipo})`,
         ephemeral: true
       });
     }
 
-    if (tipo === "bot" && roles.length >= 2) {
+    // 📋 LIST
+    if (sub === "list") {
+      const userRoles = userRolesDB.length
+        ? userRolesDB.map(id => `<@&${id}>`).join(", ")
+        : "Ninguno";
+
+      const botRoles = botRolesDB.length
+        ? botRolesDB.map(id => `<@&${id}>`).join(", ")
+        : "Ninguno";
+
       return interaction.reply({
-        content: "❌ Máximo 2 roles para bots",
+        content: `👤 Usuarios: ${userRoles}\n🤖 Bots: ${botRoles}`,
         ephemeral: true
       });
     }
 
-    if (roles.includes(role.id)) {
+    // ❌ REMOVE
+    if (sub === "remove") {
+      const role = interaction.options.getRole("rol");
+
+      const newUserRoles = userRolesDB.filter(id => id !== role.id);
+      const newBotRoles = botRolesDB.filter(id => id !== role.id);
+
+      await pool.query(
+        "UPDATE autoroles SET user_roles = $1, bot_roles = $2 WHERE guild_id = $3",
+        [newUserRoles, newBotRoles, guildId]
+      );
+
       return interaction.reply({
-        content: "❌ Ese rol ya está configurado",
+        content: `🗑️ Rol ${role} eliminado`,
         ephemeral: true
       });
     }
 
-    roles.push(role.id);
-
-    await pool.query(
-      `UPDATE autoroles SET ${tipo === "user" ? "user_roles" : "bot_roles"} = $1 WHERE guild_id = $2`,
-      [roles, guildId]
-    );
+  } catch (error) {
+    console.error("ERROR AUTOROLE:", error);
 
     return interaction.reply({
-      content: `✅ Rol ${role} añadido (${tipo})`,
+      content: "❌ Error con la base de datos",
       ephemeral: true
     });
   }
-
-  // 📋 LIST
-  if (sub === "list") {
-    const userRoles = data.user_roles.map(id => `<@&${id}>`).join(", ") || "Ninguno";
-    const botRoles = data.bot_roles.map(id => `<@&${id}>`).join(", ") || "Ninguno";
-
-    return interaction.reply({
-      content: `👤 Usuarios: ${userRoles}\n🤖 Bots: ${botRoles}`,
-      ephemeral: true
-    });
-  }
-
-  // ❌ REMOVE
-  if (sub === "remove") {
-    const role = interaction.options.getRole("rol");
-
-    let userRoles = data.user_roles.filter(id => id !== role.id);
-    let botRoles = data.bot_roles.filter(id => id !== role.id);
-
-    await pool.query(
-      "UPDATE autoroles SET user_roles = $1, bot_roles = $2 WHERE guild_id = $3",
-      [userRoles, botRoles, guildId]
-    );
-
-    return interaction.reply({
-      content: `🗑️ Rol ${role} eliminado`,
-      ephemeral: true
-    });
-  }
-                                               }
+}

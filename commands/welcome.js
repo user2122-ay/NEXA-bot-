@@ -1,32 +1,42 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
-import pool from "../database.js";
+import pkg from "pg";
+
+const { Pool } = pkg;
+
+// 🔗 conexión directa (sin database.js)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 export const data = new SlashCommandBuilder()
   .setName("welcome")
-  .setDescription("Configurar sistema de bienvenida")
+  .setDescription("Sistema de bienvenida")
 
   .addSubcommand(sub =>
     sub.setName("set")
-      .setDescription("Configurar canal de bienvenida")
+      .setDescription("Configurar canal")
       .addChannelOption(option =>
         option.setName("canal")
-          .setDescription("Canal donde enviar bienvenida")
+          .setDescription("Canal de bienvenida")
           .setRequired(true)
       )
   )
 
   .addSubcommand(sub =>
     sub.setName("test")
-      .setDescription("Probar mensaje de bienvenida")
+      .setDescription("Probar bienvenida")
   )
 
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 export async function execute(interaction) {
   const guildId = interaction.guild.id;
+  const sub = interaction.options.getSubcommand();
 
   try {
-    const sub = interaction.options.getSubcommand();
 
     // 🔧 SET
     if (sub === "set") {
@@ -41,7 +51,7 @@ export async function execute(interaction) {
       );
 
       return interaction.reply({
-        content: `✅ Canal de bienvenida configurado en ${channel}`,
+        content: `✅ Canal configurado en ${channel}`,
         ephemeral: true
       });
     }
@@ -55,7 +65,7 @@ export async function execute(interaction) {
 
       if (!res.rows[0]) {
         return interaction.reply({
-          content: "❌ No has configurado el sistema",
+          content: "❌ No configurado",
           ephemeral: true
         });
       }
@@ -82,7 +92,7 @@ export async function execute(interaction) {
   } catch (error) {
     console.error(error);
     return interaction.reply({
-      content: "❌ Error en la base de datos",
+      content: "❌ Error con la base de datos",
       ephemeral: true
     });
   }

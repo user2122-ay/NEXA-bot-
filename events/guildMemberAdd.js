@@ -1,44 +1,37 @@
-import pkg from "pg";
 import { EmbedBuilder } from "discord.js";
-
-const { Pool } = pkg;
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+import Welcome from "../models/Welcome.js";
 
 export default {
   name: "guildMemberAdd",
+
   async execute(member) {
+
     try {
 
-      // 🧠 "despertar" DB (ping rápido)
-      await pool.query("SELECT 1");
+      // 🔍 Buscar configuración
+      const data = await Welcome.findOne({
+        guildId: member.guild.id
+      });
 
-      // ⏳ pequeña espera para asegurar conexión
-      await new Promise(res => setTimeout(res, 1200));
+      if (!data) return;
 
-      const res = await pool.query(
-        "SELECT * FROM welcome_config WHERE guild_id = $1",
-        [member.guild.id]
-      );
+      // 📢 Canal
+      const channel = member.guild.channels.cache.get(data.channelId);
 
-      if (!res.rows[0]) return;
-
-      const channel = member.guild.channels.cache.get(res.rows[0].channel_id);
       if (!channel) return;
 
-      // 🎨 EMBED PRO
+      // 📝 Reemplazos automáticos
+      let texto = data.message
+        .replace("{user}", `${member}`)
+        .replace("{server}", member.guild.name);
+
+      // 🎨 EMBED
       const embed = new EmbedBuilder()
-        .setColor("#5865F2")
-        .setTitle(`👋 Bienvenido a ${member.guild.name}`)
-        .setDescription(
-          `Hola ${member},\n\n` +
-          `Bienvenido a la comunidad.\n` +
-          `Lee las reglas y disfruta tu estadía 🚀`
+        .setColor(data.color || "#5865F2")
+        .setDescription(texto)
+        .setThumbnail(
+          member.user.displayAvatarURL({ dynamic: true })
         )
-        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
         .addFields(
           {
             name: "👥 Miembros",
@@ -47,7 +40,7 @@ export default {
           },
           {
             name: "🆔 Usuario",
-            value: `${member.user.tag}`,
+            value: member.user.tag,
             inline: true
           }
         )
@@ -56,7 +49,24 @@ export default {
         })
         .setTimestamp();
 
-      await channel.send({ embeds: [embed] });
+      // 🏷️ Icono del servidor
+      if (data.icon) {
+        embed.setAuthor({
+          name: member.guild.name,
+          iconURL: member.guild.iconURL({ dynamic: true })
+        });
+      }
+
+      // 🌄 Imagen grande
+      if (data.image) {
+        embed.setImage(data.image);
+      }
+
+      // 🚀 Enviar mensaje
+      await channel.send({
+        content: `${member}`,
+        embeds: [embed]
+      });
 
     } catch (error) {
       console.error("WELCOME ERROR:", error);

@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, REST, Routes, Collection } from "discord.js"
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import { connectMongo } from "./mongo.js";
 
 dotenv.config();
 
@@ -88,6 +89,6 @@ client.on("interactionCreate", async interaction => {
     }
   }
 });
-
+connectMongo();
 // 🔑 LOGIN
 client.login(process.env.TOKEN);

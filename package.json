@@ -11,7 +11,8 @@
   "license": "MIT",
   "dependencies": {
     "discord.js": "^14.14.1",
-    "dotenv": "^16.4.5", 
-    "pg": "^8.11.0" 
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.0",
+    "mongoose": "^8.0.0"
   }
 }

@@ -16,45 +16,63 @@ export default {
       if (!data) return;
 
       // 📢 Canal
-      const channel = member.guild.channels.cache.get(data.channelId);
+      const channel =
+        member.guild.channels.cache.get(data.channelId);
 
       if (!channel) return;
 
-      // 📝 Reemplazos automáticos
-      let texto = data.message
-        .replace("{user}", `${member}`)
-        .replace("{server}", member.guild.name);
+      // 📝 Variables automáticas
+      const texto = data.message
+        .replaceAll("{user}", `${member}`)
+        .replaceAll("{server}", member.guild.name)
+        .replaceAll("{members}", member.guild.memberCount);
 
       // 🎨 EMBED
       const embed = new EmbedBuilder()
+
         .setColor(data.color || "#5865F2")
+
         .setDescription(texto)
+
         .setThumbnail(
-          member.user.displayAvatarURL({ dynamic: true })
+          member.user.displayAvatarURL({
+            dynamic: true,
+            size: 4096
+          })
         )
+
         .addFields(
           {
-            name: "👥 Miembros",
-            value: `${member.guild.memberCount}`,
+            name: "👤 Usuario",
+            value: `\`${member.user.tag}\``,
             inline: true
           },
           {
-            name: "🆔 Usuario",
-            value: member.user.tag,
+            name: "👥 Miembros",
+            value: `\`${member.guild.memberCount}\``,
             inline: true
           }
         )
+
         .setFooter({
-          text: "NEXA • Sistema de Bienvenida"
+          text: `${member.guild.name} • NEXA`,
+          iconURL:
+            member.guild.iconURL({ dynamic: true }) ||
+            member.user.displayAvatarURL({ dynamic: true })
         })
+
         .setTimestamp();
 
-      // 🏷️ Icono del servidor
+      // 🏷️ Nombre + icono server arriba
       if (data.icon) {
+
         embed.setAuthor({
-          name: member.guild.name,
-          iconURL: member.guild.iconURL({ dynamic: true })
+          name: `Bienvenido a ${member.guild.name}`,
+          iconURL:
+            member.guild.iconURL({ dynamic: true }) ||
+            member.user.displayAvatarURL({ dynamic: true })
         });
+
       }
 
       // 🌄 Imagen grande
@@ -62,14 +80,19 @@ export default {
         embed.setImage(data.image);
       }
 
-      // 🚀 Enviar mensaje
+      // 🚀 Enviar
       await channel.send({
         content: `${member}`,
         embeds: [embed]
       });
 
     } catch (error) {
-      console.error("WELCOME ERROR:", error);
+
+      console.error(
+        "❌ ERROR EN WELCOME:",
+        error
+      );
+
     }
   }
 };

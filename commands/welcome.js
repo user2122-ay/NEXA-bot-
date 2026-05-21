@@ -7,6 +7,7 @@ import {
 import Welcome from "../models/Welcome.js";
 
 export const data = new SlashCommandBuilder()
+
   .setName("welcome")
   .setDescription("Sistema de bienvenida")
 
@@ -30,19 +31,16 @@ export const data = new SlashCommandBuilder()
       .addStringOption(option =>
         option.setName("color")
           .setDescription("Color HEX (#5865F2)")
-          .setRequired(false)
       )
 
       .addStringOption(option =>
         option.setName("imagen")
           .setDescription("URL de imagen grande")
-          .setRequired(false)
       )
 
       .addBooleanOption(option =>
         option.setName("icono")
           .setDescription("¿Mostrar icono del servidor?")
-          .setRequired(false)
       )
   )
 
@@ -52,27 +50,48 @@ export const data = new SlashCommandBuilder()
       .setDescription("Probar bienvenida")
   )
 
+  // 🗑️ REMOVE
+  .addSubcommand(sub =>
+    sub.setName("remove")
+      .setDescription("Eliminar bienvenida")
+  )
+
   .setDefaultMemberPermissions(
-    PermissionFlagsBits.Administrator
+    PermissionFlagsBits.ManageGuild
   );
 
 export async function execute(interaction) {
 
-  const sub = interaction.options.getSubcommand();
+  const sub =
+    interaction.options.getSubcommand();
 
   // ⚙️ SET
   if (sub === "set") {
 
-    const canal = interaction.options.getChannel("canal");
-    const mensaje = interaction.options.getString("mensaje");
-    const color = interaction.options.getString("color") || "#5865F2";
-    const imagen = interaction.options.getString("imagen");
-    const icono = interaction.options.getBoolean("icono") ?? true;
+    const canal =
+      interaction.options.getChannel("canal");
 
+    const mensaje =
+      interaction.options.getString("mensaje");
+
+    const color =
+      interaction.options.getString("color") ||
+      "#5865F2";
+
+    const imagen =
+      interaction.options.getString("imagen");
+
+    const icono =
+      interaction.options.getBoolean("icono")
+      ?? true;
+
+    // 💾 Guardar config
     await Welcome.findOneAndUpdate(
+
       {
         guildId: interaction.guild.id
       },
+
       {
         guildId: interaction.guild.id,
         channelId: canal.id,
@@ -81,15 +100,53 @@ export async function execute(interaction) {
         image: imagen,
         icon: icono
       },
+
       {
-        upsert: true
+        upsert: true,
+        new: true
       }
+
     );
 
+    // 🎨 EMBED RESPUESTA
+    const embed = new EmbedBuilder()
+
+      .setColor(color)
+
+      .setAuthor({
+        name: interaction.guild.name,
+        iconURL:
+          interaction.guild.iconURL({
+            dynamic: true
+          }) || null
+      })
+
+      .setDescription(
+        `### ✅ Bienvenida Configurada\n\n` +
+        `> 📢 Canal: ${canal}\n` +
+        `> 🎨 Color: \`${color}\`\n` +
+        `> 🏷️ Icono: ${icono ? "Activado" : "Desactivado"}`
+      )
+
+      .setFooter({
+        text: interaction.guild.name,
+        iconURL:
+          interaction.guild.iconURL({
+            dynamic: true
+          }) || null
+      })
+
+      .setTimestamp();
+
+    if (imagen) {
+      embed.setImage(imagen);
+    }
+
     return interaction.reply({
-      content: `✅ Bienvenida configurada en ${canal}`,
-      ephemeral: true
+      embeds: [embed],
+      flags: 64
     });
+
   }
 
   // 🧪 TEST
@@ -100,60 +157,163 @@ export async function execute(interaction) {
     });
 
     if (!data) {
+
       return interaction.reply({
-        content: "❌ No hay bienvenida configurada",
-        ephemeral: true
+        content:
+          "❌ No hay bienvenida configurada",
+        flags: 64
       });
+
     }
 
-    const canal = interaction.guild.channels.cache.get(data.channelId);
+    // 📢 Canal
+    const canal =
+      interaction.guild.channels.cache.get(
+        data.channelId
+      );
 
     if (!canal) {
+
       return interaction.reply({
         content: "❌ Canal no encontrado",
-        ephemeral: true
+        flags: 64
       });
+
     }
 
-    let texto = data.message
-      .replace("{user}", `${interaction.user}`)
-      .replace("{server}", interaction.guild.name);
+    // 📝 Variables
+    const texto = data.message
+
+      .replaceAll(
+        "{user}",
+        `${interaction.user}`
+      )
+
+      .replaceAll(
+        "{server}",
+        interaction.guild.name
+      )
+
+      .replaceAll(
+        "{members}",
+        interaction.guild.memberCount
+      );
 
     // 🎨 EMBED
     const embed = new EmbedBuilder()
+
       .setColor(data.color || "#5865F2")
+
       .setDescription(texto)
+
+      .setThumbnail(
+        interaction.user.displayAvatarURL({
+          dynamic: true,
+          size: 4096
+        })
+      )
+
+      .addFields(
+
+        {
+          name: "👤 Usuario",
+          value: `${interaction.user}`,
+          inline: true
+        },
+
+        {
+          name: "👥 Miembros",
+          value: `\`${interaction.guild.memberCount}\``,
+          inline: true
+        }
+
+      )
+
       .setFooter({
-        text: "NEXA • Sistema de Bienvenida"
+
+        text: interaction.guild.name,
+
+        iconURL:
+          interaction.guild.iconURL({
+            dynamic: true
+          }) || null
+
       })
+
       .setTimestamp();
 
-    // 🖼️ icono server
+    // 🏷️ Icono arriba
     if (data.icon) {
+
       embed.setAuthor({
-        name: interaction.guild.name,
-        iconURL: interaction.guild.iconURL({ dynamic: true })
+
+        name:
+          `Bienvenido a ${interaction.guild.name}`,
+
+        iconURL:
+          interaction.guild.iconURL({
+            dynamic: true
+          }) || null
+
       });
+
     }
 
-    // 🌄 imagen grande
+    // 🌄 Imagen grande
     if (data.image) {
       embed.setImage(data.image);
     }
 
-    // 👤 avatar usuario
-    embed.setThumbnail(
-      interaction.user.displayAvatarURL({ dynamic: true })
-    );
-
+    // 🚀 Enviar
     await canal.send({
+
       content: `${interaction.user}`,
+
       embeds: [embed]
+
     });
 
     return interaction.reply({
-      content: "✅ Bienvenida enviada",
-      ephemeral: true
+
+      content:
+        "✅ Bienvenida enviada correctamente",
+
+      flags: 64
+
     });
+
   }
+
+  // 🗑️ REMOVE
+  if (sub === "remove") {
+
+    const data = await Welcome.findOne({
+      guildId: interaction.guild.id
+    });
+
+    if (!data) {
+
+      return interaction.reply({
+        content:
+          "❌ No hay bienvenida configurada",
+        flags: 64
+      });
+
+    }
+
+    await Welcome.deleteOne({
+      guildId: interaction.guild.id
+    });
+
+    return interaction.reply({
+
+      content:
+        "🗑️ Sistema de bienvenida eliminado",
+
+      flags: 64
+
+    });
+
   }
+
+                      }

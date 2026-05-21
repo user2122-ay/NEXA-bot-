@@ -5,7 +5,8 @@ const welcomeSchema = new mongoose.Schema({
   // 🆔 ID del servidor
   guildId: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
 
   // 📢 Canal de bienvenida
@@ -20,7 +21,7 @@ const welcomeSchema = new mongoose.Schema({
     default: "👋 Bienvenido {user} a {server}"
   },
 
-  // 🎨 Color embed
+  // 🎨 Color del embed
   color: {
     type: String,
     default: "#5865F2"
@@ -32,12 +33,15 @@ const welcomeSchema = new mongoose.Schema({
     default: null
   },
 
-  // 🏷️ Mostrar icono del server
+  // 🏷️ Mostrar icono del servidor
   icon: {
     type: Boolean,
     default: true
   }
 
+},
+{
+  timestamps: true
 });
 
 export default mongoose.model("Welcome", welcomeSchema);

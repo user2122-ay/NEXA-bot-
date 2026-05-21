@@ -75,7 +75,7 @@ if (member) {
   // 🎨 EMBED PRO
   const embed = new EmbedBuilder()
 
-    .setColor("#5865F2")
+.setColor(member.displayHexColor || "#5865F2")
 
     .setAuthor({
       name: `${user.tag}`,

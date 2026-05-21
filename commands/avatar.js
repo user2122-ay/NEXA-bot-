@@ -1,8 +1,13 @@
-import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import {
+  SlashCommandBuilder,
+  EmbedBuilder
+} from "discord.js";
 
 export const data = new SlashCommandBuilder()
+
   .setName("avatar")
   .setDescription("Muestra el avatar de un usuario")
+
   .addUserOption(option =>
     option
       .setName("usuario")
@@ -11,20 +16,50 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction) {
-  const user = interaction.options.getUser("usuario") || interaction.user;
 
+  // 👤 Usuario
+  const user =
+    interaction.options.getUser("usuario") ||
+    interaction.user;
+
+  // 🖼️ Avatar HD
   const avatarURL = user.displayAvatarURL({
     dynamic: true,
-    size: 1024
+    size: 4096
   });
 
+  // 🎨 EMBED PRO
   const embed = new EmbedBuilder()
-    .setColor(0x2b2d31)
-    .setTitle(`🖼️ Avatar de ${user.tag}`)
+
+    .setColor("#5865F2")
+
+    .setAuthor({
+      name: `Avatar de ${user.tag}`,
+      iconURL: avatarURL
+    })
+
     .setImage(avatarURL)
-    .setDescription(`[🔗 Descargar avatar](${avatarURL})`)
-    .setFooter({ text: `Solicitado por ${interaction.user.tag}` })
+
+    .setDescription(
+      `### 🖼️ Avatar Global\n` +
+      `> Usuario: ${user}\n` +
+      `> ID: \`${user.id}\`\n\n` +
+      `[🔗 Descargar Avatar](${avatarURL})`
+    )
+
+    .setFooter({
+      text: interaction.guild.name,
+      iconURL:
+        interaction.guild.iconURL({
+          dynamic: true
+        }) || avatarURL
+    })
+
     .setTimestamp();
 
-  await interaction.reply({ embeds: [embed] });
+  // 🚀 Enviar
+  await interaction.reply({
+    embeds: [embed]
+  });
+
 }

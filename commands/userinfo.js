@@ -26,23 +26,42 @@ export async function execute(interaction) {
   const member =
     interaction.guild.members.cache.get(user.id);
 
-  // 🎭 Roles
-  let roles = "Ninguno";
+// 🎭 Roles
+let roles = "Ninguno";
 
-  if (member) {
+if (member) {
 
-    const roleList = member.roles.cache
+  const roleList = member.roles.cache
 
-      .filter(r => r.id !== interaction.guild.id)
+    .filter(r => r.id !== interaction.guild.id)
 
-      .sort((a, b) => b.position - a.position)
+    .sort((a, b) => b.position - a.position)
 
-      .map(r => r.toString());
+    .map(r => `> ${r}`);
 
-    roles =
-      roleList.length > 0
-        ? roleList.join(" ")
-        : "Ninguno";
+  // 📋 Sin roles
+  if (roleList.length <= 0) {
+
+    roles = "Ninguno";
+
+  } else {
+
+    // 🔥 Máximo visible
+    const visibleRoles = roleList.slice(0, 15);
+
+    roles = visibleRoles.join("\n");
+
+    // ➕ Extra
+    if (roleList.length > 15) {
+
+      roles +=
+        `\n\n> Y ${roleList.length - 15} roles más...`;
+
+    }
+
+  }
+
+}
 
     // ⚠️ evitar límite Discord
     if (roles.length > 1024) {

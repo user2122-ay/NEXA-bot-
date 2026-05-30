@@ -63,14 +63,6 @@ if (member) {
 
 }
 
-    // ⚠️ evitar límite Discord
-    if (roles.length > 1024) {
-      roles =
-        `${roleList.slice(0, 15).join(" ")}\n` +
-        `\nY ${roleList.length - 15} roles más...`;
-    }
-
-  }
 
   // 🎨 EMBED PRO
   const embed = new EmbedBuilder()

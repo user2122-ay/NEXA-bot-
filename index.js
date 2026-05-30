@@ -7,7 +7,19 @@ import { connectMongo } from "./mongo.js";
 dotenv.config();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
+  intents: [
+
+    GatewayIntentBits.Guilds,
+
+    GatewayIntentBits.GuildMembers,
+
+    GatewayIntentBits.GuildMessages,
+
+    GatewayIntentBits.MessageContent,
+
+    GatewayIntentBits.GuildModeration
+
+  ]
 });
 
 client.commands = new Collection();

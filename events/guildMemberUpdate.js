@@ -137,16 +137,7 @@ export default {
         });
 
       }
-
-    } catch (error) {
-
-      console.error(
-        "❌ LOG ROLE ERROR:",
-        error
-      );
-
-    }
-    // 📝 Cambio de apodo
+// 📝 Cambio de apodo
 if (
   oldMember.nickname !==
   newMember.nickname
@@ -263,6 +254,15 @@ if (
   });
 
     }
+    } catch (error) {
+
+      console.error(
+        "❌ LOG ROLE ERROR:",
+        error
+      );
+
+    }
+    
 
   }
 

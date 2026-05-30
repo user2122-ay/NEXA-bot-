@@ -1,11 +1,48 @@
 import { EmbedBuilder } from "discord.js";
 import Welcome from "../models/Welcome.js";
+import Autorole from "../models/Autorole.js";
 
 export default {
   name: "guildMemberAdd",
 
   async execute(member) {
+// 🎭 AUTOROLE
+try {
 
+  const autorole = await Autorole.findOne({
+    guildId: member.guild.id
+  });
+
+  if (autorole) {
+
+    const roles = member.user.bot
+      ? autorole.botRoles
+      : autorole.userRoles;
+
+    for (const roleId of roles) {
+
+      const role =
+        member.guild.roles.cache.get(roleId);
+
+      if (!role) continue;
+
+      await member.roles.add(role)
+        .catch(() => {});
+
+    }
+
+  }
+
+} catch (err) {
+
+  console.error(
+    "❌ ERROR EN AUTOROLE:",
+    err
+  );
+
+}
+    //welcome 
+    
     try {
 
       // 🔍 Buscar configuración

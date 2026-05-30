@@ -146,6 +146,123 @@ export default {
       );
 
     }
+    // 📝 Cambio de apodo
+if (
+  oldMember.nickname !==
+  newMember.nickname
+) {
+
+  const embed = new EmbedBuilder()
+
+    .setColor("#FAA61A")
+
+    .setTitle("📝 Apodo actualizado")
+
+    .addFields(
+
+      {
+        name: "👤 Usuario",
+        value: `${newMember}`,
+        inline: true
+      },
+
+      {
+        name: "Antes",
+        value:
+          oldMember.nickname ||
+          "Sin apodo",
+        inline: false
+      },
+
+      {
+        name: "Después",
+        value:
+          newMember.nickname ||
+          "Sin apodo",
+        inline: false
+      }
+
+    )
+
+    .setFooter({
+      text: newMember.guild.name,
+      iconURL:
+        newMember.guild.iconURL({
+          dynamic: true
+        }) || null
+    })
+
+    .setTimestamp();
+
+  await canal.send({
+    embeds: [embed]
+  });
+
+}
+    if (
+  !oldMember.communicationDisabledUntil &&
+  newMember.communicationDisabledUntil
+) {
+
+  const embed = new EmbedBuilder()
+
+    .setColor("#ED4245")
+
+    .setTitle("🔇 Timeout aplicado")
+
+    .addFields(
+
+      {
+        name: "👤 Usuario",
+        value: `${newMember}`,
+        inline: true
+      },
+
+      {
+        name: "Finaliza",
+        value:
+          `<t:${Math.floor(
+            new Date(
+              newMember.communicationDisabledUntil
+            ).getTime() / 1000
+          )}:F>`
+      }
+
+    )
+
+    .setTimestamp();
+
+  await canal.send({
+    embeds: [embed]
+  });
+
+    }
+    if (
+  oldMember.communicationDisabledUntil &&
+  !newMember.communicationDisabledUntil
+) {
+
+  const embed = new EmbedBuilder()
+
+    .setColor("#57F287")
+
+    .setTitle("🔊 Timeout removido")
+
+    .addFields({
+
+      name: "👤 Usuario",
+
+      value: `${newMember}`
+
+    })
+
+    .setTimestamp();
+
+  await canal.send({
+    embeds: [embed]
+  });
+
+    }
 
   }
 

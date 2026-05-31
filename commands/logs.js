@@ -83,6 +83,13 @@ export const data = new SlashCommandBuilder()
             "Logs de timeouts"
           )
       )
+        .addBooleanOption(option =>
+  option
+    .setName("miembros")
+    .setDescription(
+      "Entradas y salidas"
+    )
+)
   )
 
   // 📊 VIEW

@@ -16,8 +16,9 @@ export default {
       const data = await Logs.findOne({
         guildId: role.guild.id
       });
+if (!data) return;
 
-      if (!data) return;
+if (!data.logs.roles) return;
 
       const canal =
         role.guild.channels.cache.get(

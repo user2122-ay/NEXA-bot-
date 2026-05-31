@@ -9,57 +9,176 @@ import Logs from "../models/Logs.js";
 export const data = new SlashCommandBuilder()
 
   .setName("logs")
-  .setDescription("Sistema de registros")
 
+  .setDescription(
+    "Configurar sistema de logs"
+  )
+
+  // ⚙️ SET
   .addSubcommand(sub =>
     sub
+
       .setName("set")
-      .setDescription("Configurar canal de logs")
+
+      .setDescription(
+        "Configurar logs"
+      )
 
       .addChannelOption(option =>
         option
+
           .setName("canal")
-          .setDescription("Canal de registros")
+
+          .setDescription(
+            "Canal de logs"
+          )
+
           .setRequired(true)
+      )
+
+      .addBooleanOption(option =>
+        option
+          .setName("baneos")
+          .setDescription(
+            "Logs de baneos"
+          )
+      )
+
+      .addBooleanOption(option =>
+        option
+          .setName("mensajes")
+          .setDescription(
+            "Logs de mensajes"
+          )
+      )
+
+      .addBooleanOption(option =>
+        option
+          .setName("roles")
+          .setDescription(
+            "Logs de roles"
+          )
+      )
+
+      .addBooleanOption(option =>
+        option
+          .setName("canales")
+          .setDescription(
+            "Logs de canales"
+          )
+      )
+
+      .addBooleanOption(option =>
+        option
+          .setName("apodos")
+          .setDescription(
+            "Logs de apodos"
+          )
+      )
+
+      .addBooleanOption(option =>
+        option
+          .setName("timeouts")
+          .setDescription(
+            "Logs de timeouts"
+          )
       )
   )
 
+  // 📊 VIEW
   .addSubcommand(sub =>
     sub
-      .setName("remove")
-      .setDescription("Eliminar configuración")
+
+      .setName("view")
+
+      .setDescription(
+        "Ver configuración"
+      )
   )
 
+  // 🗑️ REMOVE
   .addSubcommand(sub =>
     sub
-      .setName("test")
-      .setDescription("Enviar prueba")
+
+      .setName("remove")
+
+      .setDescription(
+        "Eliminar configuración"
+      )
   )
 
   .setDefaultMemberPermissions(
     PermissionFlagsBits.ManageGuild
   );
 
-export async function execute(interaction) {
+export async function execute(
+  interaction
+) {
 
   const sub =
     interaction.options.getSubcommand();
 
-  // ⚙️ SET
+  // =====================
+  // SET
+  // =====================
+
   if (sub === "set") {
 
     const canal =
-      interaction.options.getChannel("canal");
+      interaction.options.getChannel(
+        "canal"
+      );
+
+    const logs = {
+
+      bans:
+        interaction.options.getBoolean(
+          "baneos"
+        ) ?? true,
+
+      messages:
+        interaction.options.getBoolean(
+          "mensajes"
+        ) ?? true,
+
+      roles:
+        interaction.options.getBoolean(
+          "roles"
+        ) ?? true,
+
+      channels:
+        interaction.options.getBoolean(
+          "canales"
+        ) ?? true,
+
+      nicknames:
+        interaction.options.getBoolean(
+          "apodos"
+        ) ?? true,
+
+      timeouts:
+        interaction.options.getBoolean(
+          "timeouts"
+        ) ?? true
+
+    };
 
     await Logs.findOneAndUpdate(
 
       {
-        guildId: interaction.guild.id
+        guildId:
+          interaction.guild.id
       },
 
       {
-        guildId: interaction.guild.id,
-        channelId: canal.id
+        guildId:
+          interaction.guild.id,
+
+        channelId:
+          canal.id,
+
+        logs
+
       },
 
       {
@@ -69,124 +188,179 @@ export async function execute(interaction) {
 
     );
 
-    const embed = new EmbedBuilder()
+    const embed =
+      new EmbedBuilder()
 
-      .setColor("#5865F2")
+        .setColor("#5865F2")
 
-      .setTitle("📜 Logs Configurados")
+        .setTitle(
+          "📋 Logs Configurados"
+        )
 
-      .setDescription(
-        `> 📢 Canal: ${canal}`
-      )
+        .setDescription(
 
-      .setFooter({
-        text: interaction.guild.name,
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-      })
+          `📢 Canal: ${canal}\n\n` +
 
-      .setTimestamp();
+          `🔨 Baneos: ${
+            logs.bans
+              ? "✅"
+              : "❌"
+          }\n` +
+
+          `💬 Mensajes: ${
+            logs.messages
+              ? "✅"
+              : "❌"
+          }\n` +
+
+          `🎭 Roles: ${
+            logs.roles
+              ? "✅"
+              : "❌"
+          }\n` +
+
+          `📁 Canales: ${
+            logs.channels
+              ? "✅"
+              : "❌"
+          }\n` +
+
+          `📝 Apodos: ${
+            logs.nicknames
+              ? "✅"
+              : "❌"
+          }\n` +
+
+          `🔇 Timeouts: ${
+            logs.timeouts
+              ? "✅"
+              : "❌"
+          }`
+
+        )
+
+        .setTimestamp();
 
     return interaction.reply({
+
       embeds: [embed],
+
       flags: 64
+
     });
 
   }
 
-  // 🧪 TEST
-  if (sub === "test") {
+  // =====================
+  // VIEW
+  // =====================
+
+  if (sub === "view") {
 
     const data =
       await Logs.findOne({
-        guildId: interaction.guild.id
+
+        guildId:
+          interaction.guild.id
+
       });
 
     if (!data) {
 
       return interaction.reply({
+
         content:
           "❌ No hay logs configurados",
+
         flags: 64
+
       });
 
     }
 
-    const canal =
-      interaction.guild.channels.cache.get(
-        data.channelId
-      );
+    const embed =
+      new EmbedBuilder()
 
-    if (!canal) {
+        .setColor("#5865F2")
 
-      return interaction.reply({
-        content:
-          "❌ Canal no encontrado",
-        flags: 64
-      });
+        .setTitle(
+          "📊 Configuración Logs"
+        )
 
-    }
+        .setDescription(
 
-    const embed = new EmbedBuilder()
+          `📢 Canal: <#${data.channelId}>\n\n` +
 
-      .setColor("#57F287")
+          `🔨 Baneos: ${
+            data.logs.bans
+              ? "✅"
+              : "❌"
+          }\n` +
 
-      .setTitle("🧪 Prueba de Logs")
+          `💬 Mensajes: ${
+            data.logs.messages
+              ? "✅"
+              : "❌"
+          }\n` +
 
-      .setDescription(
-        "El sistema de logs funciona correctamente."
-      )
+          `🎭 Roles: ${
+            data.logs.roles
+              ? "✅"
+              : "❌"
+          }\n` +
 
-      .setFooter({
-        text: interaction.guild.name,
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-      })
+          `📁 Canales: ${
+            data.logs.channels
+              ? "✅"
+              : "❌"
+          }\n` +
 
-      .setTimestamp();
+          `📝 Apodos: ${
+            data.logs.nicknames
+              ? "✅"
+              : "❌"
+          }\n` +
 
-    await canal.send({
-      embeds: [embed]
-    });
+          `🔇 Timeouts: ${
+            data.logs.timeouts
+              ? "✅"
+              : "❌"
+          }`
+
+        )
+
+        .setTimestamp();
 
     return interaction.reply({
-      content:
-        "✅ Prueba enviada",
+
+      embeds: [embed],
+
       flags: 64
+
     });
 
   }
 
-  // 🗑️ REMOVE
+  // =====================
+  // REMOVE
+  // =====================
+
   if (sub === "remove") {
 
-    const data =
-      await Logs.findOne({
-        guildId: interaction.guild.id
-      });
-
-    if (!data) {
-
-      return interaction.reply({
-        content:
-          "❌ No hay logs configurados",
-        flags: 64
-      });
-
-    }
-
     await Logs.deleteOne({
-      guildId: interaction.guild.id
+
+      guildId:
+        interaction.guild.id
+
     });
 
     return interaction.reply({
+
       content:
-        "🗑️ Sistema de logs eliminado",
+        "🗑️ Configuración de logs eliminada",
+
       flags: 64
+
     });
 
   }

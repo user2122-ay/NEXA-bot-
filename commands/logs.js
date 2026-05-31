@@ -92,39 +92,56 @@ export async function execute(interaction) {
         "canal"
       );
 
+    const actual =
+  await Logs.findOne({
+    guildId: interaction.guild.id
+  });
+    
     const logs = {
 
-      bans:
-        interaction.options.getBoolean(
-          "baneos"
-        ) ?? true,
+  bans:
+    interaction.options.getBoolean(
+      "baneos"
+    ) ??
+    actual?.logs?.bans ??
+    false,
 
-      messages:
-        interaction.options.getBoolean(
-          "mensajes"
-        ) ?? true,
+  messages:
+    interaction.options.getBoolean(
+      "mensajes"
+    ) ??
+    actual?.logs?.messages ??
+    false,
 
-      roles:
-        interaction.options.getBoolean(
-          "roles"
-        ) ?? true,
+  roles:
+    interaction.options.getBoolean(
+      "roles"
+    ) ??
+    actual?.logs?.roles ??
+    false,
 
-      channels:
-        interaction.options.getBoolean(
-          "canales"
-        ) ?? true,
+  channels:
+    interaction.options.getBoolean(
+      "canales"
+    ) ??
+    actual?.logs?.channels ??
+    false,
 
-      nicknames:
-        interaction.options.getBoolean(
-          "apodos"
-        ) ?? true,
+  nicknames:
+    interaction.options.getBoolean(
+      "apodos"
+    ) ??
+    actual?.logs?.nicknames ??
+    false,
 
-      timeouts:
-        interaction.options.getBoolean(
-          "timeouts"
-        ) ?? true
+  timeouts:
+    interaction.options.getBoolean(
+      "timeouts"
+    ) ??
+    actual?.logs?.timeouts ??
+    false
 
-    };
+};
 
     await Logs.findOneAndUpdate(
 

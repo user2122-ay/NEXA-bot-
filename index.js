@@ -1,4 +1,11 @@
-import { Client, GatewayIntentBits, REST, Routes, Collection } from "discord.js";
+import {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  Collection,
+  Partials
+} from "discord.js";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -7,6 +14,7 @@ import { connectMongo } from "./mongo.js";
 dotenv.config();
 
 const client = new Client({
+
   intents: [
 
     GatewayIntentBits.Guilds,
@@ -17,11 +25,22 @@ const client = new Client({
 
     GatewayIntentBits.MessageContent,
 
-    GatewayIntentBits.GuildModeration, 
-    GatewayIntentBits.GuildMessageReactions,
-GatewayIntentBits.GuildMessages 
+    GatewayIntentBits.GuildModeration,
+
+    GatewayIntentBits.GuildMessageReactions
+
+  ],
+
+  partials: [
+
+    Partials.Message,
+
+    Partials.Channel,
+
+    Partials.Reaction
 
   ]
+
 });
 
 client.commands = new Collection();

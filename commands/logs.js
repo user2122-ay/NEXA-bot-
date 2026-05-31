@@ -175,80 +175,124 @@ export async function execute(
         guildId:
           interaction.guild.id
       },
+const logs = {
 
-      {
-        guildId:
-          interaction.guild.id,
+  bans:
+    interaction.options.getBoolean(
+      "baneos"
+    ) ?? true,
 
-        channelId:
-          canal.id,
+  messages:
+    interaction.options.getBoolean(
+      "mensajes"
+    ) ?? true,
 
-        logs
+  roles:
+    interaction.options.getBoolean(
+      "roles"
+    ) ?? true,
 
-      },
+  channels:
+    interaction.options.getBoolean(
+      "canales"
+    ) ?? true,
 
-      {
-        upsert: true,
-        new: true
-      }
+  nicknames:
+    interaction.options.getBoolean(
+      "apodos"
+    ) ?? true,
 
-    );
+  timeouts:
+    interaction.options.getBoolean(
+      "timeouts"
+    ) ?? true
 
-    const embed =
-      new EmbedBuilder()
+};
 
-        .setColor("#5865F2")
+await Logs.findOneAndUpdate(
 
-        .setTitle(
-          "📋 Logs Configurados"
-        )
+  {
+    guildId:
+      interaction.guild.id
+  },
 
-        .setDescription(
+  {
+    guildId:
+      interaction.guild.id,
 
-          `📢 Canal: ${canal}\n\n` +
+    channelId:
+      canal.id,
 
-          `🔨 Baneos: ${
-            logs.bans
-              ? "✅"
-              : "❌"
-          }\n` +
+    logs
 
-          `💬 Mensajes: ${
-            logs.messages
-              ? "✅"
-              : "❌"
-          }\n` +
+  },
 
-          `🎭 Roles: ${
-            logs.roles
-              ? "✅"
-              : "❌"
-          }\n` +
+  {
+    upsert: true,
+    new: true
+  }
 
-          `📁 Canales: ${
-            logs.channels
-              ? "✅"
-              : "❌"
-          }\n` +
+);
 
-          `📝 Apodos: ${
-            logs.nicknames
-              ? "✅"
-              : "❌"
-          }` 
+const embed =
+  new EmbedBuilder()
 
-        )
+    .setColor("#5865F2")
 
-        .setTimestamp();
+    .setTitle(
+      "📊 Configuración Logs"
+    )
 
-    return interaction.reply({
+    .setDescription(
 
-      embeds: [embed],
+      `📢 Canal: <#${data.channelId}>\n\n` +
 
-      flags: 64
+      `🔨 Baneos: ${
+        data.logs.bans
+          ? "✅"
+          : "❌"
+      }\n` +
 
-    });
+      `💬 Mensajes: ${
+        data.logs.messages
+          ? "✅"
+          : "❌"
+      }\n` +
 
+      `🎭 Roles: ${
+        data.logs.roles
+          ? "✅"
+          : "❌"
+      }\n` +
+
+      `📁 Canales: ${
+        data.logs.channels
+          ? "✅"
+          : "❌"
+      }\n` +
+
+      `📝 Apodos: ${
+        data.logs.nicknames
+          ? "✅"
+          : "❌"
+      }\n` +
+
+      `🔇 Timeouts: ${
+        data.logs.timeouts
+          ? "✅"
+          : "❌"
+      }`
+
+    )
+
+    .setTimestamp();
+return interaction.reply({
+
+  embeds: [embed],
+
+  flags: 64
+
+});
   }
 
   // =====================

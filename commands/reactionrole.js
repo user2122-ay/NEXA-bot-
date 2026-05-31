@@ -85,7 +85,12 @@ export async function execute(
     roleId: role.id
 
   });
+const message =
+  await interaction.channel.messages.fetch(
+    messageId
+  );
 
+await message.react(emoji);
   await interaction.reply({
 
     content:

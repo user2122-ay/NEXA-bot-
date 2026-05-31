@@ -1,4 +1,8 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  EmbedBuilder,
+  AuditLogEvent
+} from "discord.js";
+
 import Logs from "../models/Logs.js";
 
 export default {
@@ -22,11 +26,43 @@ export default {
 
       if (!logChannel) return;
 
+      // 🔍 Buscar responsable
+      let executor = null;
+
+      try {
+
+        const logs =
+          await role.guild.fetchAuditLogs({
+
+            type:
+              AuditLogEvent.RoleCreate,
+
+            limit: 1
+
+          });
+
+        executor =
+          logs.entries.first()?.executor ||
+          null;
+
+      } catch {}
+
       const embed = new EmbedBuilder()
 
-        .setColor("#57F287")
+        .setColor(role.hexColor !== "#000000"
+          ? role.hexColor
+          : "#57F287")
 
-        .setTitle("🎭 Rol creado")
+        .setAuthor({
+
+          name: "🎭 Rol Creado",
+
+          iconURL:
+            role.guild.iconURL({
+              dynamic: true
+            }) || undefined
+
+        })
 
         .addFields(
 
@@ -44,18 +80,49 @@ export default {
 
           {
             name: "🎨 Color",
-            value: role.hexColor || "Sin color",
+            value: role.hexColor,
             inline: true
+          },
+
+          {
+            name: "🏷️ Mención",
+            value: `${role}`,
+            inline: true
+          },
+
+          {
+            name: "📍 Posición",
+            value: `${role.position}`,
+            inline: true
+          },
+
+          {
+            name: "🔑 Permisos",
+            value:
+              `${role.permissions.toArray().length}`,
+            inline: true
+          },
+
+          {
+            name: "🛡️ Creado por",
+            value:
+              executor
+                ? `${executor}`
+                : "Desconocido",
+            inline: false
           }
 
         )
 
         .setFooter({
+
           text: role.guild.name,
+
           iconURL:
             role.guild.iconURL({
               dynamic: true
             }) || null
+
         })
 
         .setTimestamp();

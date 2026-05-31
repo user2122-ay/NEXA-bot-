@@ -1,11 +1,18 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  EmbedBuilder,
+  AuditLogEvent
+} from "discord.js";
+
 import Logs from "../models/Logs.js";
 
 export default {
 
   name: "channelUpdate",
 
-  async execute(oldChannel, newChannel) {
+  async execute(
+    oldChannel,
+    newChannel
+  ) {
 
     try {
 
@@ -14,9 +21,13 @@ export default {
         newChannel.name
       ) return;
 
-      const data = await Logs.findOne({
-        guildId: newChannel.guild.id
-      });
+      const data =
+        await Logs.findOne({
+
+          guildId:
+            newChannel.guild.id
+
+        });
 
       if (!data) return;
 
@@ -27,53 +38,122 @@ export default {
 
       if (!logChannel) return;
 
-      const embed = new EmbedBuilder()
+      // 🔍 Buscar responsable
+      const logs =
+        await newChannel.guild.fetchAuditLogs({
 
-        .setColor("#FAA61A")
+          type:
+            AuditLogEvent.ChannelUpdate,
 
-        .setTitle("📝 Canal actualizado")
+          limit: 1
 
-        .addFields(
+        });
 
-          {
-            name: "📢 Canal",
-            value: `${newChannel}`,
-            inline: true
-          },
+      const entry =
+        logs.entries.first();
 
-          {
-            name: "📛 Nombre anterior",
-            value: oldChannel.name,
-            inline: false
-          },
+      const executor =
+        entry?.executor || null;
 
-          {
-            name: "✨ Nombre nuevo",
-            value: newChannel.name,
-            inline: false
-          }
+      const embed =
+        new EmbedBuilder()
 
-        )
+          .setColor("#FEE75C")
 
-        .setFooter({
-          text: newChannel.guild.name,
-          iconURL:
-            newChannel.guild.iconURL({
-              dynamic: true
-            }) || null
-        })
+          .setAuthor({
 
-        .setTimestamp();
+            name:
+              "🟡 Canal Actualizado",
+
+            iconURL:
+              newChannel.guild.iconURL({
+                dynamic: true
+              }) || undefined
+
+          })
+
+          .addFields(
+
+            {
+
+              name:
+                "📢 Canal",
+
+              value:
+                `${newChannel}`,
+
+              inline: true
+
+            },
+
+            {
+
+              name:
+                "📛 Nombre Anterior",
+
+              value:
+                `\`${oldChannel.name}\``,
+
+              inline: false
+
+            },
+
+            {
+
+              name:
+                "✨ Nombre Nuevo",
+
+              value:
+                `\`${newChannel.name}\``,
+
+              inline: false
+
+            },
+
+            {
+
+              name:
+                "🛡️ Modificado por",
+
+              value:
+                executor
+                  ? `${executor}`
+                  : "Desconocido",
+
+              inline: false
+
+            }
+
+          )
+
+          .setFooter({
+
+            text:
+              newChannel.guild.name,
+
+            iconURL:
+              newChannel.guild.iconURL({
+                dynamic: true
+              }) || undefined
+
+          })
+
+          .setTimestamp();
 
       await logChannel.send({
+
         embeds: [embed]
+
       });
 
     } catch (error) {
 
       console.error(
+
         "❌ CHANNEL UPDATE LOG ERROR:",
+
         error
+
       );
 
     }

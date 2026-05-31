@@ -337,8 +337,13 @@ export async function execute(
             data.logs.timeouts
               ? "✅"
               : "❌"
-          }`
+          }\n`+
 
+     `👥 Miembros: ${
+  data.logs.members
+    ? "✅"
+    : "❌"
+     }` 
         )
 
         .setTimestamp();

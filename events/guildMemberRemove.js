@@ -15,6 +15,8 @@ export default {
 
       if (!data) return;
 
+if (!data.logs.members) return;
+
       const channel =
         member.guild.channels.cache.get(
           data.channelId

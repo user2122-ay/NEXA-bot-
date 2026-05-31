@@ -166,7 +166,12 @@ export async function execute(
       timeouts:
         interaction.options.getBoolean(
           "timeouts"
-        ) ?? true
+        ) ?? true, 
+      
+      members:
+  interaction.options.getBoolean(
+    "miembros"
+  ) ?? true 
 
     };
 

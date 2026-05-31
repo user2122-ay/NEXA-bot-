@@ -1,4 +1,8 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  EmbedBuilder,
+  AuditLogEvent
+} from "discord.js";
+
 import Logs from "../models/Logs.js";
 
 export default {
@@ -9,20 +13,17 @@ export default {
 
     try {
 
-      // Ignorar DMs
       if (!message.guild) return;
 
-      // Ignorar bots
       if (message.author?.bot) return;
 
-      // Buscar configuración
-      const data = await Logs.findOne({
-        guildId: message.guild.id
-      });
+      const data =
+        await Logs.findOne({
+          guildId: message.guild.id
+        });
 
       if (!data) return;
 
-      // Canal logs
       const canal =
         message.guild.channels.cache.get(
           data.channelId
@@ -30,59 +31,121 @@ export default {
 
       if (!canal) return;
 
-      const embed = new EmbedBuilder()
+      // 🔍 Buscar responsable
+      let executor = null;
 
-        .setColor("#ED4245")
+      try {
 
-        .setAuthor({
-          name: "Mensaje eliminado",
-          iconURL:
-            message.author.displayAvatarURL({
-              dynamic: true
-            })
-        })
+        const logs =
+          await message.guild.fetchAuditLogs({
 
-        .addFields(
+            type:
+              AuditLogEvent.MessageDelete,
 
-          {
-            name: "👤 Usuario",
-            value: `${message.author}`,
-            inline: true
-          },
+            limit: 1
 
-          {
-            name: "📍 Canal",
-            value: `${message.channel}`,
-            inline: true
-          },
+          });
 
-          {
-            name: "🆔 Usuario ID",
-            value: `\`${message.author.id}\``,
-            inline: false
-          }
+        const entry =
+          logs.entries.first();
 
-        )
+        if (
+          entry &&
+          entry.target?.id ===
+            message.author.id
+        ) {
 
-        .setFooter({
-          text: message.guild.name,
-          iconURL:
-            message.guild.iconURL({
-              dynamic: true
-            }) || null
-        })
+          executor =
+            entry.executor;
 
-        .setTimestamp();
+        }
 
-      // Contenido
+      } catch {}
+
+      const embed =
+        new EmbedBuilder()
+
+          .setColor("#ED4245")
+
+          .setAuthor({
+
+            name:
+              "🔴 Mensaje Eliminado",
+
+            iconURL:
+              message.author.displayAvatarURL({
+                dynamic: true
+              })
+
+          })
+
+          .addFields(
+
+            {
+              name: "👤 Usuario",
+              value: `${message.author}`,
+              inline: true
+            },
+
+            {
+              name: "📍 Canal",
+              value: `${message.channel}`,
+              inline: true
+            },
+
+            {
+              name: "🆔 ID",
+              value:
+                `\`${message.author.id}\``,
+              inline: true
+            },
+
+            {
+              name:
+                "🛡️ Eliminado por",
+
+              value:
+                executor
+                  ? `${executor}`
+                  : "Desconocido",
+
+              inline: false
+            }
+
+          )
+
+          .setFooter({
+
+            text:
+              message.guild.name,
+
+            iconURL:
+              message.guild.iconURL({
+                dynamic: true
+              }) || null
+
+          })
+
+          .setTimestamp();
+
       if (message.content) {
 
         embed.addFields({
-          name: "💬 Contenido",
+
+          name:
+            "💬 Contenido",
+
           value:
-            message.content.length > 1024
-              ? message.content.slice(0, 1020) + "..."
+            message.content.length >
+            1024
+
+              ? message.content.slice(
+                  0,
+                  1020
+                ) + "..."
+
               : message.content
+
         });
 
       }

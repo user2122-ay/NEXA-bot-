@@ -20,7 +20,7 @@ export default {
       const embed = new EmbedBuilder()
         .setColor("#2b2d31")
         .setTitle("📞 Centro de soporte")
-        .setDescription("Servidor oficial de ayuda y soporte del sistema NEXA / PanamaRP")
+        .setDescription("Servidor oficial de ayuda y soporte del sistema NEXA")
         .addFields({
           name: "🔗 Soporte",
           value: "https://discord.gg/4pmtzGBBdg"

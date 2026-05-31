@@ -19,6 +19,8 @@ export default {
 
       if (!data) return;
 
+if (!data.logs.roles) return;
+      
       const logChannel =
         role.guild.channels.cache.get(
           data.channelId

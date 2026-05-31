@@ -1,4 +1,8 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  EmbedBuilder,
+  AuditLogEvent
+} from "discord.js";
+
 import Logs from "../models/Logs.js";
 
 export default {
@@ -22,11 +26,41 @@ export default {
 
       if (!canal) return;
 
+      // 🔍 Buscar responsable
+      let executor = null;
+
+      try {
+
+        const logs =
+          await role.guild.fetchAuditLogs({
+
+            type:
+              AuditLogEvent.RoleDelete,
+
+            limit: 1
+
+          });
+
+        executor =
+          logs.entries.first()?.executor ||
+          null;
+
+      } catch {}
+
       const embed = new EmbedBuilder()
 
         .setColor("#ED4245")
 
-        .setTitle("🗑️ Rol eliminado")
+        .setAuthor({
+
+          name: "🗑️ Rol Eliminado",
+
+          iconURL:
+            role.guild.iconURL({
+              dynamic: true
+            }) || undefined
+
+        })
 
         .addFields(
 
@@ -40,16 +74,50 @@ export default {
             name: "🆔 ID",
             value: `\`${role.id}\``,
             inline: true
+          },
+
+          {
+            name: "🎨 Color",
+            value:
+              role.hexColor ||
+              "Sin color",
+            inline: true
+          },
+
+          {
+            name: "📍 Posición",
+            value:
+              `${role.position}`,
+            inline: true
+          },
+
+          {
+            name: "🔑 Permisos",
+            value:
+              `${role.permissions.toArray().length}`,
+            inline: true
+          },
+
+          {
+            name: "🛡️ Eliminado por",
+            value:
+              executor
+                ? `${executor}`
+                : "Desconocido",
+            inline: false
           }
 
         )
 
         .setFooter({
+
           text: role.guild.name,
+
           iconURL:
             role.guild.iconURL({
               dynamic: true
             }) || null
+
         })
 
         .setTimestamp();

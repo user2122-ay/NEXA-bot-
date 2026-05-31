@@ -24,6 +24,8 @@ export default {
 
       if (!data) return;
 
+if (!data.logs.messages) return;
+
       const canal =
         newMessage.guild.channels.cache.get(
           data.channelId

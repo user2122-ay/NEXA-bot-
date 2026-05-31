@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, AuditLogEvent } from "discord.js";
 import Logs from "../models/Logs.js";
 
 export default {
@@ -24,16 +24,34 @@ export default {
 
       if (!logChannel) return;
 
+      // 🔍 Buscar responsable
+      const logs =
+        await channel.guild.fetchAuditLogs({
+          type: AuditLogEvent.ChannelDelete,
+          limit: 1
+        });
+
+      const entry = logs.entries.first();
+
+      const executor =
+        entry?.executor || null;
+
       const embed = new EmbedBuilder()
 
         .setColor("#ED4245")
 
-        .setTitle("🗑️ Canal eliminado")
+        .setAuthor({
+          name: "🔴 Canal Eliminado",
+          iconURL:
+            channel.guild.iconURL({
+              dynamic: true
+            }) || undefined
+        })
 
         .addFields(
 
           {
-            name: "📢 Nombre",
+            name: "📢 Canal",
             value: `\`${channel.name}\``,
             inline: true
           },
@@ -48,6 +66,15 @@ export default {
             name: "📂 Tipo",
             value: `${channel.type}`,
             inline: true
+          },
+
+          {
+            name: "🛡️ Eliminado por",
+            value:
+              executor
+                ? `${executor}`
+                : "Desconocido",
+            inline: false
           }
 
         )
@@ -57,7 +84,7 @@ export default {
           iconURL:
             channel.guild.iconURL({
               dynamic: true
-            }) || null
+            }) || undefined
         })
 
         .setTimestamp();

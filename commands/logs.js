@@ -83,13 +83,7 @@ export const data = new SlashCommandBuilder()
             "Logs de timeouts"
           )
       )
-        .addBooleanOption(option =>
-  option
-    .setName("miembros")
-    .setDescription(
-      "Entradas y salidas"
-    )
-)
+        
   )
 
   // 📊 VIEW
@@ -241,13 +235,7 @@ export async function execute(
             logs.nicknames
               ? "✅"
               : "❌"
-          }\n` +
-
-          `🔇 Timeouts: ${
-            logs.timeouts
-              ? "✅"
-              : "❌"
-          }`
+          }` 
 
         )
 

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const logsSchema = new mongoose.Schema({
+const LogsSchema = new mongoose.Schema({
 
   guildId: {
     type: String,
@@ -11,11 +11,45 @@ const logsSchema = new mongoose.Schema({
   channelId: {
     type: String,
     required: true
+  },
+
+  logs: {
+
+    bans: {
+      type: Boolean,
+      default: true
+    },
+
+    messages: {
+      type: Boolean,
+      default: true
+    },
+
+    roles: {
+      type: Boolean,
+      default: true
+    },
+
+    channels: {
+      type: Boolean,
+      default: true
+    },
+
+    nicknames: {
+      type: Boolean,
+      default: true
+    },
+
+    timeouts: {
+      type: Boolean,
+      default: true
+    }
+
   }
 
 });
 
 export default mongoose.model(
   "Logs",
-  logsSchema
+  LogsSchema
 );

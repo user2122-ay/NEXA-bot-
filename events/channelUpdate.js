@@ -30,6 +30,7 @@ export default {
         });
 
       if (!data) return;
+      if (!data.logs.channels) return;
 
       const logChannel =
         newChannel.guild.channels.cache.get(

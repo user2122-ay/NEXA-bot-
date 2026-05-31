@@ -1,4 +1,8 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  EmbedBuilder,
+  AuditLogEvent
+} from "discord.js";
+
 import Logs from "../models/Logs.js";
 
 export default {
@@ -24,54 +28,171 @@ export default {
 
       const cambios = [];
 
-      if (oldRole.name !== newRole.name) {
+      // 📛 Nombre
+      if (
+        oldRole.name !==
+        newRole.name
+      ) {
 
         cambios.push(
-          `📛 Nombre:\n${oldRole.name} ➜ ${newRole.name}`
+          `📛 **Nombre**\n\`${oldRole.name}\` ➜ \`${newRole.name}\``
         );
 
       }
 
+      // 🎨 Color
       if (
         oldRole.hexColor !==
         newRole.hexColor
       ) {
 
         cambios.push(
-          `🎨 Color:\n${oldRole.hexColor} ➜ ${newRole.hexColor}`
+          `🎨 **Color**\n\`${oldRole.hexColor}\` ➜ \`${newRole.hexColor}\``
         );
 
       }
 
-      if (cambios.length <= 0) return;
+      // 📢 Mencionable
+      if (
+        oldRole.mentionable !==
+        newRole.mentionable
+      ) {
+
+        cambios.push(
+          `📢 **Mencionable**\n${
+            oldRole.mentionable
+              ? "Sí"
+              : "No"
+          } ➜ ${
+            newRole.mentionable
+              ? "Sí"
+              : "No"
+          }`
+        );
+
+      }
+
+      // 🔑 Permisos
+      const oldPerms =
+        oldRole.permissions.toArray();
+
+      const newPerms =
+        newRole.permissions.toArray();
+
+      const addedPerms =
+        newPerms.filter(
+          p => !oldPerms.includes(p)
+        );
+
+      const removedPerms =
+        oldPerms.filter(
+          p => !newPerms.includes(p)
+        );
+
+      if (addedPerms.length) {
+
+        cambios.push(
+          `✅ **Permisos añadidos**\n${addedPerms
+            .slice(0, 10)
+            .join("\n")}`
+        );
+
+      }
+
+      if (removedPerms.length) {
+
+        cambios.push(
+          `❌ **Permisos removidos**\n${removedPerms
+            .slice(0, 10)
+            .join("\n")}`
+        );
+
+      }
+
+      if (!cambios.length) return;
+
+      // 🔍 Responsable
+      let executor = null;
+
+      try {
+
+        const logs =
+          await newRole.guild.fetchAuditLogs({
+
+            type:
+              AuditLogEvent.RoleUpdate,
+
+            limit: 1
+
+          });
+
+        executor =
+          logs.entries.first()?.executor ||
+          null;
+
+      } catch {}
 
       const embed = new EmbedBuilder()
 
-        .setColor("#FAA61A")
+        .setColor("#FEE75C")
 
-        .setTitle("🎭 Rol actualizado")
+        .setAuthor({
+
+          name:
+            "🎭 Rol Actualizado",
+
+          iconURL:
+            newRole.guild.iconURL({
+              dynamic: true
+            }) || undefined
+
+        })
 
         .addFields(
 
           {
-            name: "Rol",
+            name: "🏷️ Rol",
             value: `${newRole}`,
+            inline: true
+          },
+
+          {
+            name: "🆔 ID",
+            value: `\`${newRole.id}\``,
+            inline: true
+          },
+
+          {
+            name:
+              "🛡️ Modificado por",
+
+            value:
+              executor
+                ? `${executor}`
+                : "Desconocido",
+
             inline: false
           },
 
           {
-            name: "Cambios",
-            value: cambios.join("\n\n")
+            name: "📝 Cambios",
+            value:
+              cambios.join("\n\n")
+                .slice(0, 1024)
           }
 
         )
 
         .setFooter({
-          text: newRole.guild.name,
+
+          text:
+            newRole.guild.name,
+
           iconURL:
             newRole.guild.iconURL({
               dynamic: true
             }) || null
+
         })
 
         .setTimestamp();

@@ -18,8 +18,6 @@ export default {
       });
 
       if (!data) return;
-
-if (!data.logs.roles) return;
       
       const canal =
         newMember.guild.channels.cache.get(
@@ -47,7 +45,11 @@ if (!data.logs.roles) return;
       // =====================
       // 🟢 ROLES AGREGADOS
       // =====================
-
+if (
+  data.logs.roles &&
+  addedRoles.size > 0
+) {
+  
       const addedRoles =
         newMember.roles.cache.filter(
           role =>
@@ -116,7 +118,10 @@ if (!data.logs.roles) return;
       // =====================
       // 🔴 ROLES REMOVIDOS
       // =====================
-
+if (
+  data.logs.roles &&
+  removedRoles.size > 0
+) {
       const removedRoles =
         oldMember.roles.cache.filter(
           role =>
@@ -190,8 +195,7 @@ if (
   oldMember.nickname !==
   newMember.nickname
 ) {
-
-        const embed =
+  const embed =
           new EmbedBuilder()
 
             .setColor("#FEE75C")

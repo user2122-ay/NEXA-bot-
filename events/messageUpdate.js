@@ -13,7 +13,6 @@ export default {
 
       if (newMessage.author?.bot) return;
 
-      // Ignorar si no cambió el contenido
       if (
         oldMessage.content ===
         newMessage.content
@@ -32,16 +31,27 @@ export default {
 
       if (!canal) return;
 
+      const before =
+        oldMessage.content ||
+        "Sin contenido";
+
+      const after =
+        newMessage.content ||
+        "Sin contenido";
+
       const embed = new EmbedBuilder()
 
-        .setColor("#FAA61A")
+        .setColor("#FEE75C")
 
         .setAuthor({
-          name: "Mensaje editado",
+
+          name: "📝 Mensaje Editado",
+
           iconURL:
             newMessage.author.displayAvatarURL({
               dynamic: true
             })
+
         })
 
         .addFields(
@@ -59,29 +69,42 @@ export default {
           },
 
           {
-            name: "📝 Antes",
-            value:
-              oldMessage.content
-                ? oldMessage.content.slice(0, 1024)
-                : "Sin contenido"
-          },
-
-          {
-            name: "✏️ Después",
-            value:
-              newMessage.content
-                ? newMessage.content.slice(0, 1024)
-                : "Sin contenido"
+            name: "🆔 ID",
+            value: `\`${newMessage.author.id}\``,
+            inline: true
           }
 
         )
 
+        .setDescription(
+
+          `### 📝 Antes\n` +
+
+          "```" +
+
+          before.slice(0, 1500) +
+
+          "```\n\n" +
+
+          `### ✏️ Después\n` +
+
+          "```" +
+
+          after.slice(0, 1500) +
+
+          "```"
+
+        )
+
         .setFooter({
+
           text: newMessage.guild.name,
+
           iconURL:
             newMessage.guild.iconURL({
               dynamic: true
             }) || null
+
         })
 
         .setTimestamp();

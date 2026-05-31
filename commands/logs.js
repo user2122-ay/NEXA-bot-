@@ -9,112 +9,74 @@ import Logs from "../models/Logs.js";
 export const data = new SlashCommandBuilder()
 
   .setName("logs")
+  .setDescription("Configurar sistema de logs")
 
-  .setDescription(
-    "Configurar sistema de logs"
-  )
-
-  // ⚙️ SET
   .addSubcommand(sub =>
     sub
-
       .setName("set")
-
-      .setDescription(
-        "Configurar logs"
-      )
+      .setDescription("Configurar logs")
 
       .addChannelOption(option =>
         option
-
           .setName("canal")
-
-          .setDescription(
-            "Canal de logs"
-          )
-
+          .setDescription("Canal de logs")
           .setRequired(true)
       )
 
       .addBooleanOption(option =>
         option
           .setName("baneos")
-          .setDescription(
-            "Logs de baneos"
-          )
+          .setDescription("Logs de baneos")
       )
 
       .addBooleanOption(option =>
         option
           .setName("mensajes")
-          .setDescription(
-            "Logs de mensajes"
-          )
+          .setDescription("Logs de mensajes")
       )
 
       .addBooleanOption(option =>
         option
           .setName("roles")
-          .setDescription(
-            "Logs de roles"
-          )
+          .setDescription("Logs de roles")
       )
 
       .addBooleanOption(option =>
         option
           .setName("canales")
-          .setDescription(
-            "Logs de canales"
-          )
+          .setDescription("Logs de canales")
       )
 
       .addBooleanOption(option =>
         option
           .setName("apodos")
-          .setDescription(
-            "Logs de apodos"
-          )
+          .setDescription("Logs de apodos")
       )
 
       .addBooleanOption(option =>
         option
           .setName("timeouts")
-          .setDescription(
-            "Logs de timeouts"
-          )
+          .setDescription("Logs de timeouts")
       )
-        
   )
 
-  // 📊 VIEW
   .addSubcommand(sub =>
     sub
-
       .setName("view")
-
-      .setDescription(
-        "Ver configuración"
-      )
+      .setDescription("Ver configuración")
   )
 
-  // 🗑️ REMOVE
   .addSubcommand(sub =>
     sub
-
       .setName("remove")
-
-      .setDescription(
-        "Eliminar configuración"
-      )
+      .setDescription("Eliminar configuración")
   )
 
   .setDefaultMemberPermissions(
     PermissionFlagsBits.ManageGuild
   );
 
-export async function execute(
-  interaction
-) {
+export async function execute(interaction) {
 
   const sub =
     interaction.options.getSubcommand();
@@ -160,139 +122,61 @@ export async function execute(
       timeouts:
         interaction.options.getBoolean(
           "timeouts"
-        ) ?? true, 
-      
-      members:
-  interaction.options.getBoolean(
-    "miembros"
-  ) ?? true 
+        ) ?? true
 
     };
 
     await Logs.findOneAndUpdate(
 
       {
-        guildId:
-          interaction.guild.id
+        guildId: interaction.guild.id
       },
-const logs = {
 
-  bans:
-    interaction.options.getBoolean(
-      "baneos"
-    ) ?? true,
+      {
+        guildId: interaction.guild.id,
+        channelId: canal.id,
+        logs
+      },
 
-  messages:
-    interaction.options.getBoolean(
-      "mensajes"
-    ) ?? true,
+      {
+        upsert: true,
+        new: true
+      }
 
-  roles:
-    interaction.options.getBoolean(
-      "roles"
-    ) ?? true,
+    );
 
-  channels:
-    interaction.options.getBoolean(
-      "canales"
-    ) ?? true,
+    const embed =
+      new EmbedBuilder()
 
-  nicknames:
-    interaction.options.getBoolean(
-      "apodos"
-    ) ?? true,
+        .setColor("#5865F2")
 
-  timeouts:
-    interaction.options.getBoolean(
-      "timeouts"
-    ) ?? true
+        .setTitle(
+          "📋 Logs Configurados"
+        )
 
-};
+        .setDescription(
 
-await Logs.findOneAndUpdate(
+          `📢 Canal: ${canal}\n\n` +
 
-  {
-    guildId:
-      interaction.guild.id
-  },
+          `🔨 Baneos: ${logs.bans ? "✅" : "❌"}\n` +
+          `💬 Mensajes: ${logs.messages ? "✅" : "❌"}\n` +
+          `🎭 Roles: ${logs.roles ? "✅" : "❌"}\n` +
+          `📁 Canales: ${logs.channels ? "✅" : "❌"}\n` +
+          `📝 Apodos: ${logs.nicknames ? "✅" : "❌"}\n` +
+          `🔇 Timeouts: ${logs.timeouts ? "✅" : "❌"}`
 
-  {
-    guildId:
-      interaction.guild.id,
+        )
 
-    channelId:
-      canal.id,
+        .setTimestamp();
 
-    logs
+    return interaction.reply({
 
-  },
+      embeds: [embed],
 
-  {
-    upsert: true,
-    new: true
-  }
+      flags: 64
 
-);
+    });
 
-const embed =
-  new EmbedBuilder()
-
-    .setColor("#5865F2")
-
-    .setTitle(
-      "📊 Configuración Logs"
-    )
-
-    .setDescription(
-
-      `📢 Canal: <#${data.channelId}>\n\n` +
-
-      `🔨 Baneos: ${
-        data.logs.bans
-          ? "✅"
-          : "❌"
-      }\n` +
-
-      `💬 Mensajes: ${
-        data.logs.messages
-          ? "✅"
-          : "❌"
-      }\n` +
-
-      `🎭 Roles: ${
-        data.logs.roles
-          ? "✅"
-          : "❌"
-      }\n` +
-
-      `📁 Canales: ${
-        data.logs.channels
-          ? "✅"
-          : "❌"
-      }\n` +
-
-      `📝 Apodos: ${
-        data.logs.nicknames
-          ? "✅"
-          : "❌"
-      }\n` +
-
-      `🔇 Timeouts: ${
-        data.logs.timeouts
-          ? "✅"
-          : "❌"
-      }`
-
-    )
-
-    .setTimestamp();
-return interaction.reply({
-
-  embeds: [embed],
-
-  flags: 64
-
-});
   }
 
   // =====================
@@ -335,47 +219,13 @@ return interaction.reply({
 
           `📢 Canal: <#${data.channelId}>\n\n` +
 
-          `🔨 Baneos: ${
-            data.logs.bans
-              ? "✅"
-              : "❌"
-          }\n` +
+          `🔨 Baneos: ${data.logs.bans ? "✅" : "❌"}\n` +
+          `💬 Mensajes: ${data.logs.messages ? "✅" : "❌"}\n` +
+          `🎭 Roles: ${data.logs.roles ? "✅" : "❌"}\n` +
+          `📁 Canales: ${data.logs.channels ? "✅" : "❌"}\n` +
+          `📝 Apodos: ${data.logs.nicknames ? "✅" : "❌"}\n` +
+          `🔇 Timeouts: ${data.logs.timeouts ? "✅" : "❌"}`
 
-          `💬 Mensajes: ${
-            data.logs.messages
-              ? "✅"
-              : "❌"
-          }\n` +
-
-          `🎭 Roles: ${
-            data.logs.roles
-              ? "✅"
-              : "❌"
-          }\n` +
-
-          `📁 Canales: ${
-            data.logs.channels
-              ? "✅"
-              : "❌"
-          }\n` +
-
-          `📝 Apodos: ${
-            data.logs.nicknames
-              ? "✅"
-              : "❌"
-          }\n` +
-
-          `🔇 Timeouts: ${
-            data.logs.timeouts
-              ? "✅"
-              : "❌"
-          }\n`+
-
-     `👥 Miembros: ${
-  data.logs.members
-    ? "✅"
-    : "❌"
-     }` 
         )
 
         .setTimestamp();

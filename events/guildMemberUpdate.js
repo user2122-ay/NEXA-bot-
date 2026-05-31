@@ -19,6 +19,8 @@ export default {
 
       if (!data) return;
 
+if (!data.logs.roles) return;
+      
       const canal =
         newMember.guild.channels.cache.get(
           data.channelId
@@ -183,11 +185,11 @@ export default {
       // =====================
       // 📝 APODO
       // =====================
-
-      if (
-        oldMember.nickname !==
-        newMember.nickname
-      ) {
+if (
+  data.logs.nicknames &&
+  oldMember.nickname !==
+  newMember.nickname
+) {
 
         const embed =
           new EmbedBuilder()
@@ -258,10 +260,10 @@ export default {
       // =====================
 
       if (
-        !oldMember.communicationDisabledUntil &&
-        newMember.communicationDisabledUntil
-      ) {
-
+  data.logs.timeouts &&
+  !oldMember.communicationDisabledUntil &&
+  newMember.communicationDisabledUntil
+) {
         const embed =
           new EmbedBuilder()
 
@@ -317,9 +319,10 @@ export default {
       // =====================
 
       if (
-        oldMember.communicationDisabledUntil &&
-        !newMember.communicationDisabledUntil
-      ) {
+  data.logs.timeouts &&
+  oldMember.communicationDisabledUntil &&
+  !newMember.communicationDisabledUntil
+) {
 
         const embed =
           new EmbedBuilder()

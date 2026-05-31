@@ -1,4 +1,8 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  EmbedBuilder,
+  AuditLogEvent
+} from "discord.js";
+
 import Logs from "../models/Logs.js";
 
 export default {
@@ -22,7 +26,26 @@ export default {
 
       if (!canal) return;
 
-      // 🟢 Roles agregados
+      // 🔍 Audit Logs
+      let executor = null;
+
+      try {
+
+        const audit =
+          await newMember.guild.fetchAuditLogs({
+            limit: 1
+          });
+
+        executor =
+          audit.entries.first()?.executor ||
+          null;
+
+      } catch {}
+
+      // =====================
+      // 🟢 ROLES AGREGADOS
+      // =====================
+
       const addedRoles =
         newMember.roles.cache.filter(
           role =>
@@ -38,7 +61,7 @@ export default {
           .setColor("#57F287")
 
           .setAuthor({
-            name: "Roles agregados",
+            name: "🟢 Roles Agregados",
             iconURL:
               newMember.user.displayAvatarURL({
                 dynamic: true
@@ -57,9 +80,17 @@ export default {
               name: "📋 Roles",
               value:
                 addedRoles
-                  .map(role => role.toString())
+                  .map(r => r.toString())
                   .join("\n")
                   .slice(0, 1024)
+            },
+
+            {
+              name: "🛡️ Modificado por",
+              value:
+                executor
+                  ? `${executor}`
+                  : "Desconocido"
             }
 
           )
@@ -80,7 +111,10 @@ export default {
 
       }
 
-      // 🔴 Roles removidos
+      // =====================
+      // 🔴 ROLES REMOVIDOS
+      // =====================
+
       const removedRoles =
         oldMember.roles.cache.filter(
           role =>
@@ -96,7 +130,7 @@ export default {
           .setColor("#ED4245")
 
           .setAuthor({
-            name: "Roles removidos",
+            name: "🔴 Roles Removidos",
             iconURL:
               newMember.user.displayAvatarURL({
                 dynamic: true
@@ -115,9 +149,17 @@ export default {
               name: "📋 Roles",
               value:
                 removedRoles
-                  .map(role => role.toString())
+                  .map(r => r.toString())
                   .join("\n")
                   .slice(0, 1024)
+            },
+
+            {
+              name: "🛡️ Modificado por",
+              value:
+                executor
+                  ? `${executor}`
+                  : "Desconocido"
             }
 
           )
@@ -137,123 +179,187 @@ export default {
         });
 
       }
-// 📝 Cambio de apodo
-if (
-  oldMember.nickname !==
-  newMember.nickname
-) {
 
-  const embed = new EmbedBuilder()
+      // =====================
+      // 📝 APODO
+      // =====================
 
-    .setColor("#FAA61A")
+      if (
+        oldMember.nickname !==
+        newMember.nickname
+      ) {
 
-    .setTitle("📝 Apodo actualizado")
+        const embed =
+          new EmbedBuilder()
 
-    .addFields(
+            .setColor("#FEE75C")
 
-      {
-        name: "👤 Usuario",
-        value: `${newMember}`,
-        inline: true
-      },
+            .setAuthor({
+              name:
+                "🟡 Apodo Actualizado",
+              iconURL:
+                newMember.user.displayAvatarURL({
+                  dynamic: true
+                })
+            })
 
-      {
-        name: "Antes",
-        value:
-          oldMember.nickname ||
-          "Sin apodo",
-        inline: false
-      },
+            .addFields(
 
-      {
-        name: "Después",
-        value:
-          newMember.nickname ||
-          "Sin apodo",
-        inline: false
+              {
+                name: "👤 Usuario",
+                value: `${newMember}`,
+                inline: true
+              },
+
+              {
+                name: "📛 Antes",
+                value:
+                  oldMember.nickname ||
+                  "Sin apodo"
+              },
+
+              {
+                name: "✨ Después",
+                value:
+                  newMember.nickname ||
+                  "Sin apodo"
+              },
+
+              {
+                name:
+                  "🛡️ Modificado por",
+                value:
+                  executor
+                    ? `${executor}`
+                    : "Desconocido"
+              }
+
+            )
+
+            .setFooter({
+              text:
+                newMember.guild.name,
+              iconURL:
+                newMember.guild.iconURL({
+                  dynamic: true
+                }) || null
+            })
+
+            .setTimestamp();
+
+        await canal.send({
+          embeds: [embed]
+        });
+
       }
 
-    )
+      // =====================
+      // 🔇 TIMEOUT
+      // =====================
 
-    .setFooter({
-      text: newMember.guild.name,
-      iconURL:
-        newMember.guild.iconURL({
-          dynamic: true
-        }) || null
-    })
+      if (
+        !oldMember.communicationDisabledUntil &&
+        newMember.communicationDisabledUntil
+      ) {
 
-    .setTimestamp();
+        const embed =
+          new EmbedBuilder()
 
-  await canal.send({
-    embeds: [embed]
-  });
+            .setColor("#ED4245")
 
-}
-    if (
-  !oldMember.communicationDisabledUntil &&
-  newMember.communicationDisabledUntil
-) {
+            .setAuthor({
+              name:
+                "🔇 Timeout Aplicado",
+              iconURL:
+                newMember.user.displayAvatarURL({
+                  dynamic: true
+                })
+            })
 
-  const embed = new EmbedBuilder()
+            .addFields(
 
-    .setColor("#ED4245")
+              {
+                name: "👤 Usuario",
+                value: `${newMember}`,
+                inline: true
+              },
 
-    .setTitle("🔇 Timeout aplicado")
+              {
+                name: "🕒 Finaliza",
+                value:
+                  `<t:${Math.floor(
+                    new Date(
+                      newMember.communicationDisabledUntil
+                    ).getTime() / 1000
+                  )}:F>`
+              },
 
-    .addFields(
+              {
+                name: "🛡️ Moderador",
+                value:
+                  executor
+                    ? `${executor}`
+                    : "Desconocido"
+              }
 
-      {
-        name: "👤 Usuario",
-        value: `${newMember}`,
-        inline: true
-      },
+            )
 
-      {
-        name: "Finaliza",
-        value:
-          `<t:${Math.floor(
-            new Date(
-              newMember.communicationDisabledUntil
-            ).getTime() / 1000
-          )}:F>`
+            .setTimestamp();
+
+        await canal.send({
+          embeds: [embed]
+        });
+
       }
 
-    )
+      // =====================
+      // 🔊 TIMEOUT REMOVIDO
+      // =====================
 
-    .setTimestamp();
+      if (
+        oldMember.communicationDisabledUntil &&
+        !newMember.communicationDisabledUntil
+      ) {
 
-  await canal.send({
-    embeds: [embed]
-  });
+        const embed =
+          new EmbedBuilder()
 
-    }
-    if (
-  oldMember.communicationDisabledUntil &&
-  !newMember.communicationDisabledUntil
-) {
+            .setColor("#57F287")
 
-  const embed = new EmbedBuilder()
+            .setAuthor({
+              name:
+                "🔊 Timeout Removido",
+              iconURL:
+                newMember.user.displayAvatarURL({
+                  dynamic: true
+                })
+            })
 
-    .setColor("#57F287")
+            .addFields(
 
-    .setTitle("🔊 Timeout removido")
+              {
+                name: "👤 Usuario",
+                value: `${newMember}`
+              },
 
-    .addFields({
+              {
+                name: "🛡️ Moderador",
+                value:
+                  executor
+                    ? `${executor}`
+                    : "Desconocido"
+              }
 
-      name: "👤 Usuario",
+            )
 
-      value: `${newMember}`
+            .setTimestamp();
 
-    })
+        await canal.send({
+          embeds: [embed]
+        });
 
-    .setTimestamp();
+      }
 
-  await canal.send({
-    embeds: [embed]
-  });
-
-    }
     } catch (error) {
 
       console.error(
@@ -262,7 +368,6 @@ if (
       );
 
     }
-    
 
   }
 

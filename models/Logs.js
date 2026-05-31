@@ -43,7 +43,12 @@ const LogsSchema = new mongoose.Schema({
     timeouts: {
       type: Boolean,
       default: true
-    }
+    }, 
+    
+    members: {
+  type: Boolean,
+  default: true
+    } 
 
   }
 

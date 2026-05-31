@@ -19,6 +19,7 @@ export default {
         });
 
       if (!data) return;
+      if (!data.logs.bans) return;
 
       const canal =
         ban.guild.channels.cache.get(

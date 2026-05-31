@@ -1,6 +1,11 @@
-module.exports = (client) => {
+import { EmbedBuilder } from "discord.js";
 
-  client.on("messageCreate", (message) => {
+export default {
+
+  name: "messageCreate",
+
+  async execute(message) {
+
     if (message.author.bot) return;
 
     const prefix = "!";
@@ -11,12 +16,19 @@ module.exports = (client) => {
     const command = args.shift().toLowerCase();
 
     if (command === "help") {
-      message.reply(
-        "📜 Centro de ayuda:\n\n" +
-        "Soporte oficial del servidor:\n" +
-        "https://discord.gg/4pmtzGBBdg"
-      );
+
+      const embed = new EmbedBuilder()
+        .setColor("#2b2d31")
+        .setTitle("📞 Centro de soporte")
+        .setDescription("Servidor oficial de ayuda y soporte del sistema NEXA / PanamaRP")
+        .addFields({
+          name: "🔗 Soporte",
+          value: "https://discord.gg/4pmtzGBBdg"
+        });
+
+      await message.reply({ embeds: [embed] });
     }
-  });
+
+  }
 
 };

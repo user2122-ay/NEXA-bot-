@@ -1,4 +1,8 @@
-import { EmbedBuilder } from "discord.js";
+import {
+  EmbedBuilder,
+  AuditLogEvent
+} from "discord.js";
+
 import Logs from "../models/Logs.js";
 
 export default {
@@ -9,9 +13,13 @@ export default {
 
     try {
 
-      const data = await Logs.findOne({
-        guildId: ban.guild.id
-      });
+      const data =
+        await Logs.findOne({
+
+          guildId:
+            ban.guild.id
+
+        });
 
       if (!data) return;
 
@@ -22,46 +30,125 @@ export default {
 
       if (!logChannel) return;
 
-      const embed = new EmbedBuilder()
+      // 🔍 Buscar responsable
+      const logs =
+        await ban.guild.fetchAuditLogs({
 
-        .setColor("#ED4245")
+          type:
+            AuditLogEvent.MemberBanAdd,
 
-        .setTitle("🔨 Usuario baneado")
+          limit: 1
 
-        .addFields(
+        });
 
-          {
-            name: "👤 Usuario",
-            value: `${ban.user.tag}`,
-            inline: true
-          },
+      const entry =
+        logs.entries.first();
 
-          {
-            name: "🆔 ID",
-            value: `\`${ban.user.id}\``,
-            inline: true
-          }
+      const executor =
+        entry?.executor || null;
 
-        )
+      const reason =
+        entry?.reason ||
+        "No especificada";
 
-        .setThumbnail(
-          ban.user.displayAvatarURL({
-            dynamic: true
+      const embed =
+        new EmbedBuilder()
+
+          .setColor("#ED4245")
+
+          .setAuthor({
+
+            name:
+              "🔨 Usuario Baneado",
+
+            iconURL:
+              ban.user.displayAvatarURL({
+                dynamic: true
+              })
+
           })
-        )
 
-        .setFooter({
-          text: ban.guild.name,
-          iconURL:
-            ban.guild.iconURL({
-              dynamic: true
-            }) || null
-        })
+          .setThumbnail(
 
-        .setTimestamp();
+            ban.user.displayAvatarURL({
+              dynamic: true,
+              size: 4096
+            })
+
+          )
+
+          .addFields(
+
+            {
+
+              name:
+                "👤 Usuario",
+
+              value:
+                `${ban.user}`,
+
+              inline: true
+
+            },
+
+            {
+
+              name:
+                "🆔 ID",
+
+              value:
+                `\`${ban.user.id}\``,
+
+              inline: true
+
+            },
+
+            {
+
+              name:
+                "🛡️ Moderador",
+
+              value:
+                executor
+                  ? `${executor}`
+                  : "Desconocido",
+
+              inline: false
+
+            },
+
+            {
+
+              name:
+                "📄 Razón",
+
+              value:
+                reason,
+
+              inline: false
+
+            }
+
+          )
+
+          .setFooter({
+
+            text:
+              ban.guild.name,
+
+            iconURL:
+              ban.guild.iconURL({
+                dynamic: true
+              }) || undefined
+
+          })
+
+          .setTimestamp();
 
       await logChannel.send({
+
         embeds: [embed]
+
       });
 
     } catch (error) {

@@ -9,69 +9,96 @@ export default {
 
     try {
 
-      if (!channel.guild) return;
+  if (!channel.guild) return;
 
-      const data = await Logs.findOne({
-        guildId: channel.guild.id
-      });
+  const data = await Logs.findOne({
+    guildId: channel.guild.id
+  });
 
-      if (!data) return;
+  if (!data) return;
 
-      const logChannel =
-        channel.guild.channels.cache.get(
-          data.channelId
-        );
+  const logChannel =
+    channel.guild.channels.cache.get(
+      data.channelId
+    );
 
-      if (!logChannel) return;
+  if (!logChannel) return;
 
-      const embed = new EmbedBuilder()
+  // 🔍 Buscar responsable
+  const logs =
+    await channel.guild.fetchAuditLogs({
+      type: 10,
+      limit: 1
+    });
 
-        .setColor("#57F287")
+  const entry = logs.entries.first();
 
-        .setTitle("📁 Canal creado")
+  const executor =
+    entry?.executor || null;
 
-        .addFields(
+  const embed = new EmbedBuilder()
 
-          {
-            name: "📢 Canal",
-            value: `${channel}`,
-            inline: true
-          },
+    .setColor("#57F287")
 
-          {
-            name: "🆔 ID",
-            value: `\`${channel.id}\``,
-            inline: true
-          },
+    .setAuthor({
+      name: "📁 Canal Creado",
+      iconURL:
+        channel.guild.iconURL({
+          dynamic: true
+        }) || undefined
+    })
 
-          {
-            name: "📂 Tipo",
-            value: `${channel.type}`,
-            inline: true
-          }
+    .addFields(
 
-        )
+      {
+        name: "📢 Canal",
+        value: `${channel}`,
+        inline: true
+      },
 
-        .setFooter({
-          text: channel.guild.name,
-          iconURL:
-            channel.guild.iconURL({
-              dynamic: true
-            }) || null
-        })
+      {
+        name: "🆔 ID",
+        value: `\`${channel.id}\``,
+        inline: true
+      },
 
-        .setTimestamp();
+      {
+        name: "📂 Tipo",
+        value: `${channel.type}`,
+        inline: true
+      },
 
-      await logChannel.send({
-        embeds: [embed]
-      });
+      {
+        name: "🛡️ Creado por",
+        value:
+          executor
+            ? `${executor}`
+            : "Desconocido",
+        inline: false
+      }
 
-    } catch (error) {
+    )
 
-      console.error(
-        "❌ CHANNEL CREATE LOG ERROR:",
-        error
-      );
+    .setFooter({
+      text: channel.guild.name,
+      iconURL:
+        channel.guild.iconURL({
+          dynamic: true
+        }) || undefined
+    })
+
+    .setTimestamp();
+
+  await logChannel.send({
+    embeds: [embed]
+  });
+
+} catch (error) {
+
+  console.error(
+    "❌ CHANNEL CREATE LOG ERROR:",
+    error
+  );
 
     }
 

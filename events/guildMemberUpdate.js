@@ -41,15 +41,10 @@ export default {
           null;
 
       } catch {}
-
-      // =====================
+// =====================
       // 🟢 ROLES AGREGADOS
       // =====================
-if (
-  data.logs.roles &&
-  addedRoles.size > 0
-) {
-  
+
       const addedRoles =
         newMember.roles.cache.filter(
           role =>
@@ -58,7 +53,10 @@ if (
             )
         );
 
-      if (addedRoles.size > 0) {
+      if (
+        data.logs.roles &&
+        addedRoles.size > 0
+      ) {
 
         const embed = new EmbedBuilder()
 
@@ -118,10 +116,7 @@ if (
       // =====================
       // 🔴 ROLES REMOVIDOS
       // =====================
-if (
-  data.logs.roles &&
-  removedRoles.size > 0
-) {
+
       const removedRoles =
         oldMember.roles.cache.filter(
           role =>
@@ -130,7 +125,10 @@ if (
             )
         );
 
-      if (removedRoles.size > 0) {
+      if (
+        data.logs.roles &&
+        removedRoles.size > 0
+      ) {
 
         const embed = new EmbedBuilder()
 
@@ -185,7 +183,7 @@ if (
           embeds: [embed]
         });
 
-      }
+        }
 
       // =====================
       // 📝 APODO

@@ -96,6 +96,9 @@ export default {
 
   async execute(message) {
 
+    // 🔍 DEBUG temporal: confirma si el evento llega y qué tipo de canal es
+    console.log(`[DEBUG] messageCreate -> canal: ${message.channel?.name} | tipo: ${message.channel?.type} | autor: ${message.author?.tag}`);
+
     // Ignorar DMs y bots (incluyéndose a sí mismo)
     if (!message.guild || message.author.bot) return;
 
@@ -185,4 +188,3 @@ export default {
     }
   }
 };
-

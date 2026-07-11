@@ -1,22 +1,23 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
-  PermissionFlagsBits
+  PermissionFlagsBits,
+  MessageFlags
 } from "discord.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 export const data = new SlashCommandBuilder()
 
   .setName("embed")
-  .setDescription("Crea un embed personalizado")
+  .setDescription("Crea un mensaje personalizado con Components V2")
 
   .addStringOption(option =>
     option.setName("titulo")
-      .setDescription("Título del embed")
+      .setDescription("Título del mensaje")
   )
 
   .addStringOption(option =>
     option.setName("descripcion")
-      .setDescription("Contenido del embed")
+      .setDescription("Contenido del mensaje")
   )
 
   .addStringOption(option =>
@@ -31,7 +32,7 @@ export const data = new SlashCommandBuilder()
 
   .addStringOption(option =>
     option.setName("icono")
-      .setDescription("URL del icono pequeño")
+      .setDescription("URL del icono pequeño (thumbnail)")
   )
 
   .setDefaultMemberPermissions(
@@ -40,80 +41,48 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
 
-  const titulo =
-    interaction.options.getString("titulo");
-
-  const descripcion =
-    interaction.options.getString("descripcion");
-
-  const color =
-    interaction.options.getString("color") ||
-    "#2b2d31";
-
-  const imagen =
-    interaction.options.getString("imagen");
-
-  const icono =
-    interaction.options.getString("icono");
+  const titulo = interaction.options.getString("titulo");
+  const descripcion = interaction.options.getString("descripcion");
+  const color = interaction.options.getString("color") || "#2b2d31";
+  const imagen = interaction.options.getString("imagen");
+  const icono = interaction.options.getString("icono");
 
   // 🔒 Verificar permisos
-  if (
-    !interaction.member.permissions.has(
-      PermissionFlagsBits.Administrator
-    )
-  ) {
-
+  if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
     return interaction.reply({
       content: "❌ No tienes permisos",
       flags: 64
     });
-
   }
 
-  // 🎨 EMBED
-  const embed = new EmbedBuilder()
-
-    .setColor(color)
-
-    .setFooter({
-      text: interaction.guild.name,
-      iconURL:
-        interaction.guild.iconURL({
-          dynamic: true
-        }) || null
-    })
-
-    .setTimestamp();
-
-  // 🏷️ Título
-  if (titulo) {
-    embed.setTitle(titulo);
+  // ⚠️ Debe haber al menos título o descripción, si no el Container queda vacío
+  if (!titulo && !descripcion) {
+    return interaction.reply({
+      content: "❌ Debes escribir al menos un título o una descripción.",
+      flags: 64
+    });
   }
 
-  // 📝 Descripción
-  if (descripcion) {
-    embed.setDescription(descripcion);
-  }
+  const container = buildInfoContainer({
+    color,
+    title: titulo,
+    description: descripcion,
+    thumbnail: icono,
+    image: imagen,
+    footer: interaction.guild.name
+  });
 
-  // 🌄 Imagen grande
-  if (imagen) {
-    embed.setImage(imagen);
-  }
-
-  // 🖼️ Icono pequeño
-  if (icono) {
-    embed.setThumbnail(icono);
-  }
-
-  // 🚀 Confirmación
+  // 🚀 Confirmación (esto sí puede ser un mensaje normal, es efímero)
   await interaction.reply({
-    content: "✅ Embed enviado",
+    content: "✅ Mensaje enviado",
     flags: 64
   });
 
-  // 📢 Enviar embed
+  // 📢 Enviar el mensaje con Components V2
+  // Importante: NO se puede mezclar con "content" ni "embeds" en el mismo mensaje
   await interaction.channel.send({
-    embeds: [embed]
+    components: [container],
+    flags: MessageFlags.IsComponentsV2
   });
 
 }

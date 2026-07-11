@@ -43,6 +43,27 @@ export const data = new SlashCommandBuilder()
       .setRequired(true)
   )
 
+  // 📎 Ahora se puede SUBIR el archivo directo desde la galería del celular
+  .addAttachmentOption(option =>
+    option.setName("imagen_archivo")
+      .setDescription("Sube la imagen grande desde tu galería (tiene prioridad sobre el link)")
+  )
+
+  .addStringOption(option =>
+    option.setName("imagen")
+      .setDescription("O pega el link directo de la imagen grande (si no subes un archivo)")
+  )
+
+  .addAttachmentOption(option =>
+    option.setName("icono_archivo")
+      .setDescription("Sube el icono pequeño desde tu galería (tiene prioridad sobre el link)")
+  )
+
+  .addStringOption(option =>
+    option.setName("icono")
+      .setDescription("O pega el link directo del icono pequeño (si no subes un archivo)")
+  )
+
   .addStringOption(option =>
     option.setName("titulo")
       .setDescription("Título del mensaje")
@@ -64,16 +85,6 @@ export const data = new SlashCommandBuilder()
       .setDescription("O escribe tu propio color HEX (ej: #FF5733). Tiene prioridad sobre 'color'")
   )
 
-  .addStringOption(option =>
-    option.setName("imagen")
-      .setDescription("URL DIRECTA de la imagen grande (debe terminar en .png/.jpg/.gif)")
-  )
-
-  .addStringOption(option =>
-    option.setName("icono")
-      .setDescription("URL DIRECTA del icono pequeño dentro del mensaje (thumbnail)")
-  )
-
   .setDefaultMemberPermissions(
     PermissionFlagsBits.Administrator
   );
@@ -92,8 +103,30 @@ export async function execute(interaction) {
   const logo = interaction.options.getString("logo");
   const titulo = interaction.options.getString("titulo");
   const descripcion = interaction.options.getString("descripcion");
-  const imagen = interaction.options.getString("imagen");
-  const icono = interaction.options.getString("icono");
+
+  // 📎 Archivo subido tiene prioridad sobre el link pegado
+  const imagenArchivo = interaction.options.getAttachment("imagen_archivo");
+  const imagenUrl = interaction.options.getString("imagen");
+  const imagen = imagenArchivo?.url || imagenUrl;
+
+  const iconoArchivo = interaction.options.getAttachment("icono_archivo");
+  const iconoUrl = interaction.options.getString("icono");
+  const icono = iconoArchivo?.url || iconoUrl;
+
+  // 🔍 Validar que los archivos subidos sean realmente imágenes
+  if (imagenArchivo && imagenArchivo.contentType && !imagenArchivo.contentType.startsWith("image/")) {
+    return interaction.reply({
+      content: "❌ El archivo de 'imagen_archivo' no es una imagen válida.",
+      flags: 64
+    });
+  }
+
+  if (iconoArchivo && iconoArchivo.contentType && !iconoArchivo.contentType.startsWith("image/")) {
+    return interaction.reply({
+      content: "❌ El archivo de 'icono_archivo' no es una imagen válida.",
+      flags: 64
+    });
+  }
 
   // 🎨 El HEX manual tiene prioridad sobre la paleta; si no hay ninguno, color por defecto
   const color =
@@ -159,7 +192,7 @@ export async function execute(interaction) {
   } catch (err) {
     console.error("⚠️ Error enviando mensaje por webhook:", err.message);
     return interaction.editReply({
-      content: `❌ No se pudo enviar el mensaje. Revisa que las URLs de imagen/logo sean links DIRECTOS a un archivo de imagen.\n\nError: ${err.message}`
+      content: `❌ No se pudo enviar el mensaje.\n\nError: ${err.message}`
     });
   }
 

@@ -43,25 +43,15 @@ export const data = new SlashCommandBuilder()
       .setRequired(true)
   )
 
-  // 📎 Ahora se puede SUBIR el archivo directo desde la galería del celular
+  // 📎 Solo archivo desde galería, sin opción de link
   .addAttachmentOption(option =>
     option.setName("imagen_archivo")
-      .setDescription("Sube la imagen grande desde tu galería (tiene prioridad sobre el link)")
-  )
-
-  .addStringOption(option =>
-    option.setName("imagen")
-      .setDescription("O pega el link directo de la imagen grande (si no subes un archivo)")
+      .setDescription("Sube la imagen grande desde tu galería")
   )
 
   .addAttachmentOption(option =>
     option.setName("icono_archivo")
-      .setDescription("Sube el icono pequeño desde tu galería (tiene prioridad sobre el link)")
-  )
-
-  .addStringOption(option =>
-    option.setName("icono")
-      .setDescription("O pega el link directo del icono pequeño (si no subes un archivo)")
+      .setDescription("Sube el icono pequeño desde tu galería")
   )
 
   .addStringOption(option =>
@@ -74,15 +64,11 @@ export const data = new SlashCommandBuilder()
       .setDescription("Contenido del mensaje")
   )
 
+  // 🎨 Solo paleta, sin HEX manual
   .addStringOption(option =>
     option.setName("color")
       .setDescription("Elige un color de la paleta")
       .addChoices(...PALETA_COLORES)
-  )
-
-  .addStringOption(option =>
-    option.setName("color_hex")
-      .setDescription("O escribe tu propio color HEX (ej: #FF5733). Tiene prioridad sobre 'color'")
   )
 
   .setDefaultMemberPermissions(
@@ -103,15 +89,10 @@ export async function execute(interaction) {
   const logo = interaction.options.getString("logo");
   const titulo = interaction.options.getString("titulo");
   const descripcion = interaction.options.getString("descripcion");
+  const color = interaction.options.getString("color") || "#2b2d31";
 
-  // 📎 Archivo subido tiene prioridad sobre el link pegado
   const imagenArchivo = interaction.options.getAttachment("imagen_archivo");
-  const imagenUrl = interaction.options.getString("imagen");
-  const imagen = imagenArchivo?.url || imagenUrl;
-
   const iconoArchivo = interaction.options.getAttachment("icono_archivo");
-  const iconoUrl = interaction.options.getString("icono");
-  const icono = iconoArchivo?.url || iconoUrl;
 
   // 🔍 Validar que los archivos subidos sean realmente imágenes
   if (imagenArchivo && imagenArchivo.contentType && !imagenArchivo.contentType.startsWith("image/")) {
@@ -127,12 +108,6 @@ export async function execute(interaction) {
       flags: 64
     });
   }
-
-  // 🎨 El HEX manual tiene prioridad sobre la paleta; si no hay ninguno, color por defecto
-  const color =
-    interaction.options.getString("color_hex") ||
-    interaction.options.getString("color") ||
-    "#2b2d31";
 
   // ⚠️ Debe haber al menos título o descripción, si no el Container queda vacío
   if (!titulo && !descripcion) {
@@ -176,8 +151,8 @@ export async function execute(interaction) {
     color,
     title: titulo,
     description: descripcion,
-    thumbnail: icono,
-    image: imagen,
+    thumbnail: iconoArchivo?.url,
+    image: imagenArchivo?.url,
     footer: interaction.guild.name
   });
 

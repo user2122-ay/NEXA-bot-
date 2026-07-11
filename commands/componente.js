@@ -43,7 +43,6 @@ export const data = new SlashCommandBuilder()
       .setRequired(true)
   )
 
-  // 📎 Solo archivo desde galería, sin opción de link
   .addAttachmentOption(option =>
     option.setName("imagen_archivo")
       .setDescription("Sube la imagen grande desde tu galería")
@@ -64,7 +63,6 @@ export const data = new SlashCommandBuilder()
       .setDescription("Contenido del mensaje")
   )
 
-  // 🎨 Solo paleta, sin HEX manual
   .addStringOption(option =>
     option.setName("color")
       .setDescription("Elige un color de la paleta")
@@ -147,12 +145,33 @@ export async function execute(interaction) {
     });
   }
 
+  // 📎 Re-subir los archivos como parte del mensaje nuevo, en vez de usar
+  // el link temporal del adjunto de la interacción (ese link expira/no sirve
+  // fuera del contexto de la interacción original).
+  const files = [];
+  let imagenRef = null;
+  let iconoRef = null;
+
+  if (imagenArchivo) {
+    files.push({ attachment: imagenArchivo.url, name: imagenArchivo.name });
+    imagenRef = `attachment://${imagenArchivo.name}`;
+  }
+
+  if (iconoArchivo) {
+    // Evitar choque de nombres si suben un archivo con el mismo nombre para ambos
+    const mismoNombre = imagenArchivo && imagenArchivo.name === iconoArchivo.name;
+    const iconoName = mismoNombre ? `icono-${iconoArchivo.name}` : iconoArchivo.name;
+
+    files.push({ attachment: iconoArchivo.url, name: iconoName });
+    iconoRef = `attachment://${iconoName}`;
+  }
+
   const container = buildInfoContainer({
     color,
     title: titulo,
     description: descripcion,
-    thumbnail: iconoArchivo?.url,
-    image: imagenArchivo?.url,
+    thumbnail: iconoRef,
+    image: imagenRef,
     footer: interaction.guild.name
   });
 
@@ -162,6 +181,7 @@ export async function execute(interaction) {
       username: nombre,
       avatarURL: logo,
       components: [container],
+      files,
       flags: MessageFlags.IsComponentsV2
     });
   } catch (err) {

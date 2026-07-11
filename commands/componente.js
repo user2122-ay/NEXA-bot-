@@ -5,10 +5,43 @@ import {
 } from "discord.js";
 import { buildInfoContainer } from "../utils/componentsV2.js";
 
+// 🎨 Paleta de colores predefinida (nombre visible -> valor HEX)
+const PALETA_COLORES = [
+  { name: "Blurple (Discord)", value: "#5865F2" },
+  { name: "Verde", value: "#57F287" },
+  { name: "Rojo", value: "#ED4245" },
+  { name: "Amarillo", value: "#FEE75C" },
+  { name: "Rosado / Fucsia", value: "#EB459E" },
+  { name: "Naranja", value: "#E67E22" },
+  { name: "Morado", value: "#9B59B6" },
+  { name: "Turquesa", value: "#1ABC9C" },
+  { name: "Celeste", value: "#3498DB" },
+  { name: "Dorado", value: "#F1C40F" },
+  { name: "Verde oscuro", value: "#1F8B4C" },
+  { name: "Rojo oscuro", value: "#992D22" },
+  { name: "Azul marino", value: "#2C3E50" },
+  { name: "Gris", value: "#99AAB5" },
+  { name: "Blanco", value: "#FFFFFF" },
+  { name: "Negro", value: "#23272A" }
+];
+
 export const data = new SlashCommandBuilder()
 
   .setName("componente")
   .setDescription("Crea un mensaje personalizado (Components V2) con nombre y logo propios")
+
+  // ⚠️ Los campos requeridos van primero (Discord lo exige)
+  .addStringOption(option =>
+    option.setName("nombre")
+      .setDescription("Nombre con el que se enviará el mensaje")
+      .setRequired(true)
+  )
+
+  .addStringOption(option =>
+    option.setName("logo")
+      .setDescription("URL del logo/avatar con el que se enviará el mensaje")
+      .setRequired(true)
+  )
 
   .addStringOption(option =>
     option.setName("titulo")
@@ -22,27 +55,23 @@ export const data = new SlashCommandBuilder()
 
   .addStringOption(option =>
     option.setName("color")
-      .setDescription("Color HEX (#5865F2)")
+      .setDescription("Elige un color de la paleta")
+      .addChoices(...PALETA_COLORES)
+  )
+
+  .addStringOption(option =>
+    option.setName("color_hex")
+      .setDescription("O escribe tu propio color HEX (ej: #FF5733). Tiene prioridad sobre 'color'")
   )
 
   .addStringOption(option =>
     option.setName("imagen")
-      .setDescription("URL de la imagen grande")
+      .setDescription("URL DIRECTA de la imagen grande (debe terminar en .png/.jpg/.gif)")
   )
 
   .addStringOption(option =>
     option.setName("icono")
-      .setDescription("URL del icono pequeño dentro del mensaje (thumbnail)")
-  )
-
-  .addStringOption(option =>
-    option.setName("nombre")
-      .setDescription("Nombre con el que se enviará el mensaje (por defecto: el del bot)")
-  )
-
-  .addStringOption(option =>
-    option.setName("logo")
-      .setDescription("URL del logo/avatar con el que se enviará el mensaje")
+      .setDescription("URL DIRECTA del icono pequeño dentro del mensaje (thumbnail)")
   )
 
   .setDefaultMemberPermissions(
@@ -59,13 +88,18 @@ export async function execute(interaction) {
     });
   }
 
+  const nombre = interaction.options.getString("nombre");
+  const logo = interaction.options.getString("logo");
   const titulo = interaction.options.getString("titulo");
   const descripcion = interaction.options.getString("descripcion");
-  const color = interaction.options.getString("color") || "#2b2d31";
   const imagen = interaction.options.getString("imagen");
   const icono = interaction.options.getString("icono");
-  const nombre = interaction.options.getString("nombre") || interaction.client.user.username;
-  const logo = interaction.options.getString("logo") || interaction.client.user.displayAvatarURL();
+
+  // 🎨 El HEX manual tiene prioridad sobre la paleta; si no hay ninguno, color por defecto
+  const color =
+    interaction.options.getString("color_hex") ||
+    interaction.options.getString("color") ||
+    "#2b2d31";
 
   // ⚠️ Debe haber al menos título o descripción, si no el Container queda vacío
   if (!titulo && !descripcion) {
@@ -125,7 +159,7 @@ export async function execute(interaction) {
   } catch (err) {
     console.error("⚠️ Error enviando mensaje por webhook:", err.message);
     return interaction.editReply({
-      content: "❌ No se pudo enviar el mensaje."
+      content: `❌ No se pudo enviar el mensaje. Revisa que las URLs de imagen/logo sean links DIRECTOS a un archivo de imagen.\n\nError: ${err.message}`
     });
   }
 

@@ -1,10 +1,12 @@
 import {
   SlashCommandBuilder,
   PermissionFlagsBits,
-  EmbedBuilder
+  MessageFlags,
+  TextDisplayBuilder
 } from "discord.js";
 
 import Welcome from "../models/Welcome.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 export const data = new SlashCommandBuilder()
 
@@ -62,36 +64,20 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
 
-  const sub =
-    interaction.options.getSubcommand();
+  const sub = interaction.options.getSubcommand();
 
   // ⚙️ SET
   if (sub === "set") {
 
-    const canal =
-      interaction.options.getChannel("canal");
-
-    const mensaje =
-      interaction.options.getString("mensaje");
-
-    const color =
-      interaction.options.getString("color") ||
-      "#5865F2";
-
-    const imagen =
-      interaction.options.getString("imagen");
-
-    const icono =
-      interaction.options.getBoolean("icono")
-      ?? true;
+    const canal = interaction.options.getChannel("canal");
+    const mensaje = interaction.options.getString("mensaje");
+    const color = interaction.options.getString("color") || "#5865F2";
+    const imagen = interaction.options.getString("imagen");
+    const icono = interaction.options.getBoolean("icono") ?? true;
 
     // 💾 Guardar config
     await Welcome.findOneAndUpdate(
-
-      {
-        guildId: interaction.guild.id
-      },
-
+      { guildId: interaction.guild.id },
       {
         guildId: interaction.guild.id,
         channelId: canal.id,
@@ -100,51 +86,24 @@ export async function execute(interaction) {
         image: imagen,
         icon: icono
       },
-
-      {
-        upsert: true,
-        new: true
-      }
-
+      { upsert: true, new: true }
     );
 
-    // 🎨 EMBED RESPUESTA
-    const embed = new EmbedBuilder()
-
-      .setColor(color)
-
-      .setAuthor({
-        name: interaction.guild.name,
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-      })
-
-      .setDescription(
-        `### ✅ Bienvenida Configurada\n\n` +
+    // 📦 Container de confirmación
+    const container = buildInfoContainer({
+      color,
+      title: "✅ Bienvenida Configurada",
+      description:
         `> 📢 Canal: ${canal}\n` +
         `> 🎨 Color: \`${color}\`\n` +
-        `> 🏷️ Icono: ${icono ? "Activado" : "Desactivado"}`
-      )
-
-      .setFooter({
-        text: interaction.guild.name,
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-      })
-
-      .setTimestamp();
-
-    if (imagen) {
-      embed.setImage(imagen);
-    }
+        `> 🏷️ Icono: ${icono ? "Activado" : "Desactivado"}`,
+      image: imagen,
+      footer: interaction.guild.name
+    });
 
     return interaction.reply({
-      embeds: [embed],
-      flags: 64
+      components: [container],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
     });
 
   }
@@ -157,129 +116,52 @@ export async function execute(interaction) {
     });
 
     if (!data) {
-
       return interaction.reply({
-        content:
-          "❌ No hay bienvenida configurada",
+        content: "❌ No hay bienvenida configurada",
         flags: 64
       });
-
     }
 
-    // 📢 Canal
-    const canal =
-      interaction.guild.channels.cache.get(
-        data.channelId
-      );
+    const canal = interaction.guild.channels.cache.get(data.channelId);
 
     if (!canal) {
-
       return interaction.reply({
         content: "❌ Canal no encontrado",
         flags: 64
       });
-
     }
 
     // 📝 Variables
     const texto = data.message
+      .replaceAll("{user}", `${interaction.user}`)
+      .replaceAll("{server}", interaction.guild.name)
+      .replaceAll("{members}", interaction.guild.memberCount);
 
-      .replaceAll(
-        "{user}",
-        `${interaction.user}`
-      )
+    const descripcion =
+      `${texto}\n\n` +
+      `👤 Usuario: \`${interaction.user.tag}\`\n` +
+      `👥 Miembros: \`${interaction.guild.memberCount}\``;
 
-      .replaceAll(
-        "{server}",
-        interaction.guild.name
-      )
+    const container = buildInfoContainer({
+      color: data.color || "#5865F2",
+      title: data.icon ? `Bienvenido a ${interaction.guild.name}` : null,
+      description: descripcion,
+      thumbnail: interaction.user.displayAvatarURL({ dynamic: true, size: 4096 }),
+      image: data.image,
+      footer: interaction.guild.name
+    });
 
-      .replaceAll(
-        "{members}",
-        interaction.guild.memberCount
-      );
-
-    // 🎨 EMBED
-    const embed = new EmbedBuilder()
-
-      .setColor(data.color || "#5865F2")
-
-      .setDescription(texto)
-
-      .setThumbnail(
-        interaction.user.displayAvatarURL({
-          dynamic: true,
-          size: 4096
-        })
-      )
-
-      .addFields(
-
-        {
-          name: "👤 Usuario",
-          value: `${interaction.user}`,
-          inline: true
-        },
-
-        {
-          name: "👥 Miembros",
-          value: `\`${interaction.guild.memberCount}\``,
-          inline: true
-        }
-
-      )
-
-      .setFooter({
-
-        text: interaction.guild.name,
-
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-
-      })
-
-      .setTimestamp();
-
-    // 🏷️ Icono arriba
-    if (data.icon) {
-
-      embed.setAuthor({
-
-        name:
-          `Bienvenido a ${interaction.guild.name}`,
-
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-
-      });
-
-    }
-
-    // 🌄 Imagen grande
-    if (data.image) {
-      embed.setImage(data.image);
-    }
+    const ping = new TextDisplayBuilder().setContent(`${interaction.user}`);
 
     // 🚀 Enviar
     await canal.send({
-
-      content: `${interaction.user}`,
-
-      embeds: [embed]
-
+      components: [ping, container],
+      flags: MessageFlags.IsComponentsV2
     });
 
     return interaction.reply({
-
-      content:
-        "✅ Bienvenida enviada correctamente",
-
+      content: "✅ Bienvenida enviada correctamente",
       flags: 64
-
     });
 
   }
@@ -292,13 +174,10 @@ export async function execute(interaction) {
     });
 
     if (!data) {
-
       return interaction.reply({
-        content:
-          "❌ No hay bienvenida configurada",
+        content: "❌ No hay bienvenida configurada",
         flags: 64
       });
-
     }
 
     await Welcome.deleteOne({
@@ -306,14 +185,10 @@ export async function execute(interaction) {
     });
 
     return interaction.reply({
-
-      content:
-        "🗑️ Sistema de bienvenida eliminado",
-
+      content: "🗑️ Sistema de bienvenida eliminado",
       flags: 64
-
     });
 
   }
 
-                      }
+}

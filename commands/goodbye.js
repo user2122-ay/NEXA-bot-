@@ -1,10 +1,11 @@
 import {
   SlashCommandBuilder,
   PermissionFlagsBits,
-  EmbedBuilder
+  MessageFlags
 } from "discord.js";
 
 import Goodbye from "../models/Goodbye.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 export const data = new SlashCommandBuilder()
 
@@ -59,35 +60,19 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
 
-  const sub =
-    interaction.options.getSubcommand();
+  const sub = interaction.options.getSubcommand();
 
   // ⚙️ SET
   if (sub === "set") {
 
-    const canal =
-      interaction.options.getChannel("canal");
-
-    const mensaje =
-      interaction.options.getString("mensaje");
-
-    const color =
-      interaction.options.getString("color") ||
-      "#ED4245";
-
-    const imagen =
-      interaction.options.getString("imagen");
-
-    const icono =
-      interaction.options.getBoolean("icono")
-      ?? true;
+    const canal = interaction.options.getChannel("canal");
+    const mensaje = interaction.options.getString("mensaje");
+    const color = interaction.options.getString("color") || "#ED4245";
+    const imagen = interaction.options.getString("imagen");
+    const icono = interaction.options.getBoolean("icono") ?? true;
 
     await Goodbye.findOneAndUpdate(
-
-      {
-        guildId: interaction.guild.id
-      },
-
+      { guildId: interaction.guild.id },
       {
         guildId: interaction.guild.id,
         channelId: canal.id,
@@ -96,50 +81,23 @@ export async function execute(interaction) {
         image: imagen,
         icon: icono
       },
-
-      {
-        upsert: true,
-        new: true
-      }
-
+      { upsert: true, new: true }
     );
 
-    const embed = new EmbedBuilder()
-
-      .setColor(color)
-
-      .setAuthor({
-        name: interaction.guild.name,
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-      })
-
-      .setDescription(
-        `### 👋 Despedida Configurada\n\n` +
+    const container = buildInfoContainer({
+      color,
+      title: "👋 Despedida Configurada",
+      description:
         `> 📢 Canal: ${canal}\n` +
         `> 🎨 Color: \`${color}\`\n` +
-        `> 🏷️ Icono: ${icono ? "Activado" : "Desactivado"}`
-      )
-
-      .setFooter({
-        text: interaction.guild.name,
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-      })
-
-      .setTimestamp();
-
-    if (imagen) {
-      embed.setImage(imagen);
-    }
+        `> 🏷️ Icono: ${icono ? "Activado" : "Desactivado"}`,
+      image: imagen,
+      footer: interaction.guild.name
+    });
 
     return interaction.reply({
-      embeds: [embed],
-      flags: 64
+      components: [container],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
     });
 
   }
@@ -152,103 +110,43 @@ export async function execute(interaction) {
     });
 
     if (!data) {
-
       return interaction.reply({
-        content:
-          "❌ No hay despedida configurada",
+        content: "❌ No hay despedida configurada",
         flags: 64
       });
-
     }
 
-    const canal =
-      interaction.guild.channels.cache.get(
-        data.channelId
-      );
+    const canal = interaction.guild.channels.cache.get(data.channelId);
 
     if (!canal) {
-
       return interaction.reply({
-        content:
-          "❌ Canal no encontrado",
+        content: "❌ Canal no encontrado",
         flags: 64
       });
-
     }
 
     const texto = data.message
+      .replaceAll("{user}", interaction.user.tag)
+      .replaceAll("{server}", interaction.guild.name)
+      .replaceAll("{members}", interaction.guild.memberCount);
 
-      .replaceAll(
-        "{user}",
-        interaction.user.tag
-      )
-
-      .replaceAll(
-        "{server}",
-        interaction.guild.name
-      )
-
-      .replaceAll(
-        "{members}",
-        interaction.guild.memberCount
-      );
-
-    const embed = new EmbedBuilder()
-
-      .setColor(
-        data.color || "#ED4245"
-      )
-
-      .setDescription(texto)
-
-      .setThumbnail(
-        interaction.user.displayAvatarURL({
-          dynamic: true,
-          size: 4096
-        })
-      )
-
-      .setFooter({
-        text: interaction.guild.name,
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-      })
-
-      .setTimestamp();
-
-    if (data.icon) {
-
-      embed.setAuthor({
-
-        name:
-          `Salida de ${interaction.guild.name}`,
-
-        iconURL:
-          interaction.guild.iconURL({
-            dynamic: true
-          }) || null
-
-      });
-
-    }
-
-    if (data.image) {
-      embed.setImage(data.image);
-    }
+    const container = buildInfoContainer({
+      color: data.color || "#ED4245",
+      title: data.icon ? `Salida de ${interaction.guild.name}` : null,
+      description: texto,
+      thumbnail: interaction.user.displayAvatarURL({ dynamic: true, size: 4096 }),
+      image: data.image,
+      footer: interaction.guild.name
+    });
 
     await canal.send({
-      embeds: [embed]
+      components: [container],
+      flags: MessageFlags.IsComponentsV2
     });
 
     return interaction.reply({
-
-      content:
-        "✅ Despedida enviada correctamente",
-
+      content: "✅ Despedida enviada correctamente",
       flags: 64
-
     });
 
   }
@@ -261,16 +159,10 @@ export async function execute(interaction) {
     });
 
     if (!data) {
-
       return interaction.reply({
-
-        content:
-          "❌ No hay despedida configurada",
-
+        content: "❌ No hay despedida configurada",
         flags: 64
-
       });
-
     }
 
     await Goodbye.deleteOne({
@@ -278,14 +170,10 @@ export async function execute(interaction) {
     });
 
     return interaction.reply({
-
-      content:
-        "🗑️ Sistema de despedida eliminado",
-
+      content: "🗑️ Sistema de despedida eliminado",
       flags: 64
-
     });
 
   }
 
-        }
+}

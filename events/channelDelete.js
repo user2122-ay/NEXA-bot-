@@ -1,5 +1,6 @@
-import { EmbedBuilder, AuditLogEvent } from "discord.js";
+import { MessageFlags, AuditLogEvent } from "discord.js";
 import Logs from "../models/Logs.js";
+import { buildLogContainer } from "../utils/componentsV2.js";
 
 export default {
 
@@ -18,91 +19,42 @@ export default {
       if (!data) return;
       if (!data.logs.channels) return;
 
-      const logChannel =
-        channel.guild.channels.cache.get(
-          data.channelId
-        );
+      const logChannel = channel.guild.channels.cache.get(data.channelId);
 
       if (!logChannel) return;
 
       // 🔍 Buscar responsable
-      const logs =
-        await channel.guild.fetchAuditLogs({
-          type: AuditLogEvent.ChannelDelete,
-          limit: 1
-        });
+      const logs = await channel.guild.fetchAuditLogs({
+        type: AuditLogEvent.ChannelDelete,
+        limit: 1
+      });
 
       const entry = logs.entries.first();
+      const executor = entry?.executor || null;
 
-      const executor =
-        entry?.executor || null;
-
-      const embed = new EmbedBuilder()
-
-        .setColor("#ED4245")
-
-        .setAuthor({
-          name: "🔴 Canal Eliminado",
-          iconURL:
-            channel.guild.iconURL({
-              dynamic: true
-            }) || undefined
-        })
-
-        .addFields(
-
-          {
-            name: "📢 Canal",
-            value: `\`${channel.name}\``,
-            inline: true
-          },
-
-          {
-            name: "🆔 ID",
-            value: `\`${channel.id}\``,
-            inline: true
-          },
-
-          {
-            name: "📂 Tipo",
-            value: `${channel.type}`,
-            inline: true
-          },
-
-          {
-            name: "🛡️ Eliminado por",
-            value:
-              executor
-                ? `${executor}`
-                : "Desconocido",
-            inline: false
-          }
-
-        )
-
-        .setFooter({
-          text: channel.guild.name,
-          iconURL:
-            channel.guild.iconURL({
-              dynamic: true
-            }) || undefined
-        })
-
-        .setTimestamp();
+      const container = buildLogContainer({
+        color: "#ED4245",
+        title: "🔴 Canal Eliminado",
+        fields: [
+          { name: "📢 Canal", value: `\`${channel.name}\`` },
+          { name: "🆔 ID", value: `\`${channel.id}\`` },
+          { name: "📂 Tipo", value: `${channel.type}` },
+          { name: "🛡️ Eliminado por", value: executor ? `${executor}` : "Desconocido" }
+        ],
+        footer: channel.guild.name
+      });
 
       await logChannel.send({
-        embeds: [embed]
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: ["users"] }
       });
 
     } catch (error) {
-
-      console.error(
-        "❌ CHANNEL DELETE LOG ERROR:",
-        error
-      );
-
+      console.error("❌ CHANNEL DELETE LOG ERROR:", error);
     }
 
   }
 
 };
+

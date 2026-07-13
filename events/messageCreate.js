@@ -1,6 +1,7 @@
-import { EmbedBuilder, PermissionFlagsBits } from "discord.js";
+import { PermissionFlagsBits, MessageFlags } from "discord.js";
 import AutomodConfig from "../models/AutomodConfig.js";
 import Warn from "../models/Warn.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 // 🧠 Cache en memoria para detectar spam (se reinicia si el bot se reinicia, es normal)
 const spamCache = new Map();
@@ -71,18 +72,21 @@ async function handleViolation(message, config, reason) {
       const channel = await message.guild.channels.fetch(config.logChannelId);
 
       if (channel) {
-        const embed = new EmbedBuilder()
-          .setColor("#ED4245")
-          .setTitle("🛡️ Automod")
-          .setDescription(
+        const container = buildInfoContainer({
+          color: "#ED4245",
+          title: "🛡️ Automod",
+          description:
             `**Usuario:** ${message.author.tag} (${message.author.id})\n` +
             `**Canal:** <#${message.channel.id}>\n` +
             `**Motivo:** ${reason}\n` +
             `**Advertencias totales:** ${warnCount}`
-          )
-          .setTimestamp();
+        });
 
-        await channel.send({ embeds: [embed] });
+        await channel.send({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2,
+          allowedMentions: { parse: ["users"] }
+        });
       }
     } catch (err) {
       console.error("⚠️ Error enviando log de automod:", err.message);
@@ -95,9 +99,6 @@ export default {
   once: false,
 
   async execute(message) {
-
-    // 🔍 DEBUG temporal: confirma si el evento llega y qué tipo de canal es
-    console.log(`[DEBUG] messageCreate -> canal: ${message.channel?.name} | tipo: ${message.channel?.type} | autor: ${message.author?.tag}`);
 
     // Ignorar DMs y bots (incluyéndose a sí mismo)
     if (!message.guild || message.author.bot) return;

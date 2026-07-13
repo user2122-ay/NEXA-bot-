@@ -1,4 +1,5 @@
-import { EmbedBuilder } from "discord.js";
+import { MessageFlags } from "discord.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 export default {
 
@@ -17,16 +18,18 @@ export default {
 
     if (command === "help") {
 
-      const embed = new EmbedBuilder()
-        .setColor("#2b2d31")
-        .setTitle("📞 Centro de soporte")
-        .setDescription("Servidor oficial de ayuda y soporte del sistema NEXA")
-        .addFields({
-          name: "🔗 Soporte",
-          value: "https://discord.gg/4pmtzGBBdg"
-        });
+      const container = buildInfoContainer({
+        color: "#2b2d31",
+        title: "📞 Centro de soporte",
+        description:
+          "Servidor oficial de ayuda y soporte del sistema NEXA\n\n" +
+          "🔗 **Soporte:** https://discord.gg/4pmtzGBBdg"
+      });
 
-      await message.reply({ embeds: [embed] });
+      await message.reply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
+      });
     }
 
   }

@@ -1,88 +1,77 @@
 import {
   ContainerBuilder,
-  SeparatorSpacingSize,
-  MessageFlags
+  SeparatorSpacingSize
 } from "discord.js";
 
-// 🔧 Convierte un color HEX ("#5865F2") a entero, que es lo que pide setAccentColor
+/**
+ * Convierte un color HEX ("#5865F2") a entero, como lo pide setAccentColor().
+ */
 export function hexToInt(hex) {
   if (!hex) return null;
-  return parseInt(hex.replace("#", ""), 16);
+  const parsed = parseInt(hex.replace("#", ""), 16);
+  return isNaN(parsed) ? null : parsed;
 }
 
-// 🏳️ Flag necesaria para poder enviar componentes V2 (Contenedores, TextDisplay, etc.)
-export const V2_FLAGS = MessageFlags.IsComponentsV2;
-
 /**
- * Construye un Container genérico tipo "info card":
- * título + descripción (opcionalmente junto a un thumbnail), imagen grande abajo, y footer.
+ * Construye un Container estilo "embed clásico": título + descripción,
+ * imagen(es) en una galería, y footer opcional.
  *
- * Reemplaza al patrón viejo de EmbedBuilder que se repetía en welcome/goodbye/embed/logs.
+ * NOTA: se eliminó el combo SectionBuilder + ThumbnailBuilder (mini-icono al
+ * lado del texto) porque no renderizaba la imagen de forma confiable.
+ * Ahora "thumbnail" e "image" se muestran juntos en la misma galería de medios,
+ * que es el patrón confirmado que sí funciona.
  */
 export function buildInfoContainer({
+  color,
   title,
   description,
-  color,
-  imageUrl,
-  thumbnailUrl,
-  footerText
-} = {}) {
-
+  thumbnail,
+  image,
+  footer
+}) {
   const container = new ContainerBuilder();
 
-  if (color) {
-    container.setAccentColor(hexToInt(color));
+  const accentColor = hexToInt(color);
+  if (accentColor !== null) {
+    container.setAccentColor(accentColor);
   }
 
-  // 📝 Texto principal (título en negrita + descripción)
+  // 🏷️ Título + descripción
   const textParts = [];
-  if (title) textParts.push(`## ${title}`);
+  if (title) textParts.push(`### ${title}`);
   if (description) textParts.push(description);
 
   if (textParts.length > 0) {
-
-    if (thumbnailUrl) {
-      // Si hay thumbnail, va en una Section con el texto al lado
-      container.addSectionComponents(
-        section => section
-          .addTextDisplayComponents(
-            td => td.setContent(textParts.join("\n\n"))
-          )
-          .setThumbnailAccessory(
-            thumb => thumb.setURL(thumbnailUrl)
-          )
-      );
-    } else {
-      container.addTextDisplayComponents(
-        td => td.setContent(textParts.join("\n\n"))
-      );
-    }
-  }
-
-  // 🌄 Imagen grande (media gallery)
-  if (imageUrl) {
-    container.addSeparatorComponents(
-      sep => sep.setSpacing(SeparatorSpacingSize.Small)
-    );
-
-    container.addMediaGalleryComponents(
-      gallery => gallery.addItems(
-        item => item.setURL(imageUrl)
-      )
+    container.addTextDisplayComponents(td =>
+      td.setContent(textParts.join("\n\n"))
     );
   }
 
-  // 📌 Footer (texto pequeño con separador arriba)
-  if (footerText) {
-    container.addSeparatorComponents(
-      sep => sep.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+  // 🖼️ Galería de imágenes (thumbnail + image juntos, en ese orden)
+  const galeria = [thumbnail, image].filter(Boolean);
+
+  if (galeria.length > 0) {
+    container.addSeparatorComponents(sep =>
+      sep.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
     );
 
-    container.addTextDisplayComponents(
-      td => td.setContent(`-# ${footerText}`)
+    container.addMediaGalleryComponents(gallery => {
+      for (const url of galeria) {
+        gallery.addItems(item => item.setURL(url));
+      }
+      return gallery;
+    });
+  }
+
+  // 📝 Footer (subtexto pequeño de Discord)
+  if (footer) {
+    container.addSeparatorComponents(sep =>
+      sep.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    );
+    container.addTextDisplayComponents(td =>
+      td.setContent(`-# ${footer}`)
     );
   }
 
   return container;
 }
-

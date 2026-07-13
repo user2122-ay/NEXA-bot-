@@ -77,3 +77,41 @@ export function buildInfoContainer({
 
   return container;
 }
+
+/**
+ * Construye un Container para logs: título + lista de campos (nombre: valor),
+ * en vez del sistema de "fields" en columnas que tenían los embeds.
+ * Pensado para reemplazar el patrón repetido en events/*Log*.js.
+ *
+ * fields: [{ name: "📢 Canal", value: "#general" }, ...]
+ * (los campos con value vacío/null se omiten automáticamente)
+ */
+export function buildLogContainer({ color, title, fields = [], footer }) {
+  const container = new ContainerBuilder();
+
+  const accentColor = hexToInt(color);
+  if (accentColor !== null) {
+    container.setAccentColor(accentColor);
+  }
+
+  const lines = [];
+  if (title) lines.push(`### ${title}`);
+
+  for (const field of fields) {
+    if (field.value === undefined || field.value === null || field.value === "") continue;
+    lines.push(`**${field.name}**\n${field.value}`);
+  }
+
+  if (lines.length > 0) {
+    container.addTextDisplayComponents((td) => td.setContent(lines.join("\n\n")));
+  }
+
+  if (footer) {
+    container.addSeparatorComponents((sep) =>
+      sep.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
+    );
+    container.addTextDisplayComponents((td) => td.setContent(`-# ${footer}`));
+  }
+
+  return container;
+}

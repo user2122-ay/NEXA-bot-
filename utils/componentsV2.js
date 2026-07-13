@@ -86,7 +86,7 @@ export function buildInfoContainer({
  * fields: [{ name: "📢 Canal", value: "#general" }, ...]
  * (los campos con value vacío/null se omiten automáticamente)
  */
-export function buildLogContainer({ color, title, fields = [], footer }) {
+export function buildLogContainer({ color, title, fields = [], thumbnail, footer }) {
   const container = new ContainerBuilder();
 
   const accentColor = hexToInt(color);
@@ -103,7 +103,17 @@ export function buildLogContainer({ color, title, fields = [], footer }) {
   }
 
   if (lines.length > 0) {
-    container.addTextDisplayComponents((td) => td.setContent(lines.join("\n\n")));
+    const texto = lines.join("\n\n");
+
+    if (thumbnail) {
+      container.addSectionComponents((section) =>
+        section
+          .addTextDisplayComponents((td) => td.setContent(texto))
+          .setThumbnailAccessory((thumb) => thumb.setURL(thumbnail))
+      );
+    } else {
+      container.addTextDisplayComponents((td) => td.setContent(texto));
+    }
   }
 
   if (footer) {

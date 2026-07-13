@@ -13,13 +13,13 @@ export function hexToInt(hex) {
 }
 
 /**
- * Construye un Container estilo "embed clásico": título + descripción,
- * imagen(es) en una galería, y footer opcional.
+ * Construye un Container estilo "embed clásico":
+ * - título + descripción, con el "thumbnail" como mini-ícono en la esquina (Section + accessory)
+ * - "image" como banner grande abajo (MediaGallery)
+ * - footer opcional
  *
- * NOTA: se eliminó el combo SectionBuilder + ThumbnailBuilder (mini-icono al
- * lado del texto) porque no renderizaba la imagen de forma confiable.
- * Ahora "thumbnail" e "image" se muestran juntos en la misma galería de medios,
- * que es el patrón confirmado que sí funciona.
+ * Todo con sintaxis de "callback" (igual al patrón que confirmamos que sí funciona),
+ * en vez de instanciar los builders por fuera y pasarlos ya armados.
  */
 export function buildInfoContainer({
   color,
@@ -36,41 +36,43 @@ export function buildInfoContainer({
     container.setAccentColor(accentColor);
   }
 
-  // 🏷️ Título + descripción
+  // 🏷️ Título + descripción (con mini-ícono en la esquina si hay thumbnail)
   const textParts = [];
   if (title) textParts.push(`### ${title}`);
   if (description) textParts.push(description);
+  const textoCompleto = textParts.join("\n\n");
 
   if (textParts.length > 0) {
-    container.addTextDisplayComponents(td =>
-      td.setContent(textParts.join("\n\n"))
-    );
+
+    if (thumbnail) {
+      container.addSectionComponents((section) =>
+        section
+          .addTextDisplayComponents((td) => td.setContent(textoCompleto))
+          .setThumbnailAccessory((thumb) => thumb.setURL(thumbnail))
+      );
+    } else {
+      container.addTextDisplayComponents((td) => td.setContent(textoCompleto));
+    }
+
   }
 
-  // 🖼️ Galería de imágenes (thumbnail + image juntos, en ese orden)
-  const galeria = [thumbnail, image].filter(Boolean);
-
-  if (galeria.length > 0) {
-    container.addSeparatorComponents(sep =>
+  // 🌄 Banner grande (galería)
+  if (image) {
+    container.addSeparatorComponents((sep) =>
       sep.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
     );
 
-    container.addMediaGalleryComponents(gallery => {
-      for (const url of galeria) {
-        gallery.addItems(item => item.setURL(url));
-      }
-      return gallery;
-    });
+    container.addMediaGalleryComponents((gallery) =>
+      gallery.addItems((item) => item.setURL(image))
+    );
   }
 
   // 📝 Footer (subtexto pequeño de Discord)
   if (footer) {
-    container.addSeparatorComponents(sep =>
+    container.addSeparatorComponents((sep) =>
       sep.setSpacing(SeparatorSpacingSize.Small).setDivider(true)
     );
-    container.addTextDisplayComponents(td =>
-      td.setContent(`-# ${footer}`)
-    );
+    container.addTextDisplayComponents((td) => td.setContent(`-# ${footer}`));
   }
 
   return container;

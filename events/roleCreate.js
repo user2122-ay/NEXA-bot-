@@ -1,9 +1,6 @@
-import {
-  EmbedBuilder,
-  AuditLogEvent
-} from "discord.js";
-
+import { MessageFlags, AuditLogEvent } from "discord.js";
 import Logs from "../models/Logs.js";
+import { buildLogContainer } from "../utils/componentsV2.js";
 
 export default {
 
@@ -18,13 +15,9 @@ export default {
       });
 
       if (!data) return;
+      if (!data.logs.roles) return;
 
-if (!data.logs.roles) return;
-      
-      const logChannel =
-        role.guild.channels.cache.get(
-          data.channelId
-        );
+      const logChannel = role.guild.channels.cache.get(data.channelId);
 
       if (!logChannel) return;
 
@@ -32,114 +25,37 @@ if (!data.logs.roles) return;
       let executor = null;
 
       try {
+        const logs = await role.guild.fetchAuditLogs({
+          type: AuditLogEvent.RoleCreate,
+          limit: 1
+        });
 
-        const logs =
-          await role.guild.fetchAuditLogs({
-
-            type:
-              AuditLogEvent.RoleCreate,
-
-            limit: 1
-
-          });
-
-        executor =
-          logs.entries.first()?.executor ||
-          null;
-
+        executor = logs.entries.first()?.executor || null;
       } catch {}
 
-      const embed = new EmbedBuilder()
-
-        .setColor(role.hexColor !== "#000000"
-          ? role.hexColor
-          : "#57F287")
-
-        .setAuthor({
-
-          name: "🎭 Rol Creado",
-
-          iconURL:
-            role.guild.iconURL({
-              dynamic: true
-            }) || undefined
-
-        })
-
-        .addFields(
-
-          {
-            name: "📛 Nombre",
-            value: role.name,
-            inline: true
-          },
-
-          {
-            name: "🆔 ID",
-            value: `\`${role.id}\``,
-            inline: true
-          },
-
-          {
-            name: "🎨 Color",
-            value: role.hexColor,
-            inline: true
-          },
-
-          {
-            name: "🏷️ Mención",
-            value: `${role}`,
-            inline: true
-          },
-
-          {
-            name: "📍 Posición",
-            value: `${role.position}`,
-            inline: true
-          },
-
-          {
-            name: "🔑 Permisos",
-            value:
-              `${role.permissions.toArray().length}`,
-            inline: true
-          },
-
-          {
-            name: "🛡️ Creado por",
-            value:
-              executor
-                ? `${executor}`
-                : "Desconocido",
-            inline: false
-          }
-
-        )
-
-        .setFooter({
-
-          text: role.guild.name,
-
-          iconURL:
-            role.guild.iconURL({
-              dynamic: true
-            }) || null
-
-        })
-
-        .setTimestamp();
+      const container = buildLogContainer({
+        color: role.hexColor !== "#000000" ? role.hexColor : "#57F287",
+        title: "🎭 Rol Creado",
+        fields: [
+          { name: "📛 Nombre", value: role.name },
+          { name: "🆔 ID", value: `\`${role.id}\`` },
+          { name: "🎨 Color", value: role.hexColor },
+          { name: "🏷️ Mención", value: `${role}` },
+          { name: "📍 Posición", value: `${role.position}` },
+          { name: "🔑 Permisos", value: `${role.permissions.toArray().length}` },
+          { name: "🛡️ Creado por", value: executor ? `${executor}` : "Desconocido" }
+        ],
+        footer: role.guild.name
+      });
 
       await logChannel.send({
-        embeds: [embed]
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: { parse: ["users"] }
       });
 
     } catch (error) {
-
-      console.error(
-        "❌ ROLE CREATE LOG ERROR:",
-        error
-      );
-
+      console.error("❌ ROLE CREATE LOG ERROR:", error);
     }
 
   }

@@ -1,5 +1,6 @@
-import { EmbedBuilder } from "discord.js";
+import { MessageFlags } from "discord.js";
 import Goodbye from "../models/Goodbye.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 export default {
 
@@ -15,82 +16,31 @@ export default {
 
       if (!data) return;
 
-
-
-      const channel =
-        member.guild.channels.cache.get(
-          data.channelId
-        );
+      const channel = member.guild.channels.cache.get(data.channelId);
 
       if (!channel) return;
 
       const texto = data.message
-
         .replaceAll("{user}", member.user.tag)
+        .replaceAll("{server}", member.guild.name)
+        .replaceAll("{members}", member.guild.memberCount);
 
-        .replaceAll(
-          "{server}",
-          member.guild.name
-        )
-
-        .replaceAll(
-          "{members}",
-          member.guild.memberCount
-        );
-
-      const embed = new EmbedBuilder()
-
-        .setColor(
-          data.color || "#ED4245"
-        )
-
-        .setDescription(texto)
-
-        .setThumbnail(
-          member.user.displayAvatarURL({
-            dynamic: true,
-            size: 4096
-          })
-        )
-
-        .setFooter({
-          text: member.guild.name,
-          iconURL:
-            member.guild.iconURL({
-              dynamic: true
-            }) || null
-        })
-
-        .setTimestamp();
-
-      if (data.icon) {
-
-        embed.setAuthor({
-          name:
-            `Salida de ${member.guild.name}`,
-          iconURL:
-            member.guild.iconURL({
-              dynamic: true
-            }) || null
-        });
-
-      }
-
-      if (data.image) {
-        embed.setImage(data.image);
-      }
+      const container = buildInfoContainer({
+        color: data.color || "#ED4245",
+        title: data.icon ? `Salida de ${member.guild.name}` : null,
+        description: texto,
+        thumbnail: member.user.displayAvatarURL({ dynamic: true, size: 4096 }),
+        image: data.image,
+        footer: member.guild.name
+      });
 
       await channel.send({
-        embeds: [embed]
+        components: [container],
+        flags: MessageFlags.IsComponentsV2
       });
 
     } catch (err) {
-
-      console.error(
-        "❌ GOODBYE ERROR:",
-        err
-      );
-
+      console.error("❌ GOODBYE ERROR:", err);
     }
 
   }

@@ -1,5 +1,6 @@
-import { EmbedBuilder } from "discord.js";
+import { MessageFlags } from "discord.js";
 import Logs from "../models/Logs.js";
+import { buildLogContainer } from "../utils/componentsV2.js";
 
 export default {
 
@@ -9,100 +10,52 @@ export default {
 
     try {
 
-  if (!channel.guild) return;
+      if (!channel.guild) return;
 
-  const data = await Logs.findOne({
-    guildId: channel.guild.id
-  });
+      const data = await Logs.findOne({
+        guildId: channel.guild.id
+      });
 
-  if (!data) return;
-  if (!data.logs.channels) return;
+      if (!data) return;
+      if (!data.logs.channels) return;
 
-  const logChannel =
-    channel.guild.channels.cache.get(
-      data.channelId
-    );
+      const logChannel = channel.guild.channels.cache.get(data.channelId);
 
-  if (!logChannel) return;
+      if (!logChannel) return;
 
-  // 🔍 Buscar responsable
-  const logs =
-    await channel.guild.fetchAuditLogs({
-      type: 10,
-      limit: 1
-    });
+      // 🔍 Buscar responsable
+      const logs = await channel.guild.fetchAuditLogs({
+        type: 10,
+        limit: 1
+      });
 
-  const entry = logs.entries.first();
+      const entry = logs.entries.first();
+      const executor = entry?.executor || null;
 
-  const executor =
-    entry?.executor || null;
+      const container = buildLogContainer({
+        color: "#57F287",
+        title: "📁 Canal Creado",
+        fields: [
+          { name: "📢 Canal", value: `${channel}` },
+          { name: "🆔 ID", value: `\`${channel.id}\`` },
+          { name: "📂 Tipo", value: `${channel.type}` },
+          { name: "🛡️ Creado por", value: executor ? `${executor}` : "Desconocido" }
+        ],
+        footer: channel.guild.name
+      });
 
-  const embed = new EmbedBuilder()
+      await logChannel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+        // 🔇 Que se vean las menciones de rol pero no notifiquen (sí notifica al usuario)
+        allowedMentions: { parse: ["users"] }
+      });
 
-    .setColor("#57F287")
-
-    .setAuthor({
-      name: "📁 Canal Creado",
-      iconURL:
-        channel.guild.iconURL({
-          dynamic: true
-        }) || undefined
-    })
-
-    .addFields(
-
-      {
-        name: "📢 Canal",
-        value: `${channel}`,
-        inline: true
-      },
-
-      {
-        name: "🆔 ID",
-        value: `\`${channel.id}\``,
-        inline: true
-      },
-
-      {
-        name: "📂 Tipo",
-        value: `${channel.type}`,
-        inline: true
-      },
-
-      {
-        name: "🛡️ Creado por",
-        value:
-          executor
-            ? `${executor}`
-            : "Desconocido",
-        inline: false
-      }
-
-    )
-
-    .setFooter({
-      text: channel.guild.name,
-      iconURL:
-        channel.guild.iconURL({
-          dynamic: true
-        }) || undefined
-    })
-
-    .setTimestamp();
-
-  await logChannel.send({
-    embeds: [embed]
-  });
-
-} catch (error) {
-
-  console.error(
-    "❌ CHANNEL CREATE LOG ERROR:",
-    error
-  );
-
+    } catch (error) {
+      console.error("❌ CHANNEL CREATE LOG ERROR:", error);
     }
 
   }
 
 };
+

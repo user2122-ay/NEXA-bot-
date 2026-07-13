@@ -1,11 +1,12 @@
 import {
   SlashCommandBuilder,
   PermissionFlagsBits,
-  EmbedBuilder,
+  MessageFlags,
   ChannelType
 } from "discord.js";
 import AutomodConfig from "../models/AutomodConfig.js";
 import Warn from "../models/Warn.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 async function getOrCreateConfig(guildId) {
   let config = await AutomodConfig.findOne({ guildId });
@@ -182,17 +183,19 @@ export async function execute(interaction) {
       });
     }
 
-    const embed = new EmbedBuilder()
-      .setColor("#F0B232")
-      .setTitle(`⚠️ Advertencias de ${usuario.tag}`)
-      .setDescription(
-        warns.map((w, i) =>
-          `**${i + 1}.** ${w.reason} — <t:${Math.floor(w.createdAt.getTime() / 1000)}:R>`
-        ).join("\n")
-      )
-      .setFooter({ text: `Total: ${warns.length}` });
+    const container = buildInfoContainer({
+      color: "#F0B232",
+      title: `⚠️ Advertencias de ${usuario.tag}`,
+      description: warns.map((w, i) =>
+        `**${i + 1}.** ${w.reason} — <t:${Math.floor(w.createdAt.getTime() / 1000)}:R>`
+      ).join("\n"),
+      footer: `Total: ${warns.length}`
+    });
 
-    return interaction.reply({ embeds: [embed], flags: 64 });
+    return interaction.reply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+    });
   }
 
   if (sub === "resetwarns") {
@@ -208,10 +211,10 @@ export async function execute(interaction) {
   if (sub === "config") {
     const config = await getOrCreateConfig(guildId);
 
-    const embed = new EmbedBuilder()
-      .setColor("#5865F2")
-      .setTitle("🛡️ Configuración de Automod")
-      .setDescription(
+    const container = buildInfoContainer({
+      color: "#5865F2",
+      title: "🛡️ Configuración de Automod",
+      description:
         `**Estado general:** ${config.enabled ? "🟢 Activado" : "🔴 Desactivado"}\n` +
         `**Canal de alertas:** ${config.logChannelId ? `<#${config.logChannelId}>` : "No configurado"}\n\n` +
         `**Módulos:**\n` +
@@ -220,9 +223,11 @@ export async function execute(interaction) {
         `Anti mención masiva: ${config.modules.antiMassMention ? "✅" : "❌"}\n` +
         `Palabras prohibidas: ${config.modules.antiBannedWords ? "✅" : "❌"} (${config.bannedWords.length} palabras)\n` +
         `Anti mayúsculas: ${config.modules.antiCaps ? "✅" : "❌"}`
-      );
+    });
 
-    return interaction.reply({ embeds: [embed], flags: 64 });
+    return interaction.reply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral
+    });
   }
 }
-

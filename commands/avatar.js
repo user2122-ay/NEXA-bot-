@@ -1,7 +1,8 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder
+  MessageFlags
 } from "discord.js";
+import { buildInfoContainer } from "../utils/componentsV2.js";
 
 export const data = new SlashCommandBuilder()
 
@@ -17,49 +18,27 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
 
-  // 👤 Usuario
-  const user =
-    interaction.options.getUser("usuario") ||
-    interaction.user;
+  const user = interaction.options.getUser("usuario") || interaction.user;
 
-  // 🖼️ Avatar HD
   const avatarURL = user.displayAvatarURL({
     dynamic: true,
     size: 4096
   });
 
-  // 🎨 EMBED PRO
-  const embed = new EmbedBuilder()
-
-    .setColor("#5865F2")
-
-    .setAuthor({
-      name: `Avatar de ${user.tag}`,
-      iconURL: avatarURL
-    })
-
-    .setImage(avatarURL)
-
-    .setDescription(
-      `### 🖼️ Avatar Global\n` +
+  const container = buildInfoContainer({
+    color: "#5865F2",
+    title: `🖼️ Avatar de ${user.tag}`,
+    description:
       `> Usuario: ${user}\n` +
       `> ID: \`${user.id}\`\n\n` +
-      `[🔗 Descargar Avatar](${avatarURL})`
-    )
+      `[🔗 Descargar Avatar](${avatarURL})`,
+    image: avatarURL,
+    footer: interaction.guild.name
+  });
 
-    .setFooter({
-      text: interaction.guild.name,
-      iconURL:
-        interaction.guild.iconURL({
-          dynamic: true
-        }) || avatarURL
-    })
-
-    .setTimestamp();
-
-  // 🚀 Enviar
   await interaction.reply({
-    embeds: [embed]
+    components: [container],
+    flags: MessageFlags.IsComponentsV2
   });
 
 }

@@ -1,11 +1,12 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ComponentType
+  ComponentType,
+  MessageFlags
 } from "discord.js";
+import { buildLogContainer } from "../utils/componentsV2.js";
 
 export const data = new SlashCommandBuilder()
   .setName("serverinfo")
@@ -19,20 +20,15 @@ export async function execute(interaction) {
   const owner = await guild.fetchOwner();
 
   // 📅 Fecha
-  const createdAt =
-    `<t:${Math.floor(guild.createdTimestamp / 1000)}:F>`;
+  const createdAt = `<t:${Math.floor(guild.createdTimestamp / 1000)}:F>`;
 
   // 👥 Miembros
   const memberCount = guild.memberCount;
 
   // 📂 Canales
   const channels = guild.channels.cache;
-
-  const textChannels =
-    channels.filter(c => c.type === 0).size;
-
-  const voiceChannels =
-    channels.filter(c => c.type === 2).size;
+  const textChannels = channels.filter(c => c.type === 0).size;
+  const voiceChannels = channels.filter(c => c.type === 2).size;
 
   // 🎭 Roles ordenados
   const roles = guild.roles.cache
@@ -42,218 +38,93 @@ export async function execute(interaction) {
 
   // 📄 Dividir roles en páginas
   const chunkSize = 15;
-
   const rolePages = [];
 
   for (let i = 0; i < roles.length; i += chunkSize) {
-
-    rolePages.push(
-      roles.slice(i, i + chunkSize).join("\n")
-    );
-
+    rolePages.push(roles.slice(i, i + chunkSize).join("\n"));
   }
 
   let currentPage = 0;
 
-  // 🎨 EMBED
-  const createEmbed = (page) => {
-
-    return new EmbedBuilder()
-
-      .setColor("#5865F2")
-
-      .setAuthor({
-        name: guild.name,
-        iconURL:
-          guild.iconURL({ dynamic: true }) ||
-          interaction.user.displayAvatarURL()
-      })
-
-      .setThumbnail(
-        guild.iconURL({
-          dynamic: true,
-          size: 4096
-        })
-      )
-
-      .setDescription(
-        `### 📊 Información del Servidor`
-      )
-
-      .addFields(
-
-        {
-          name: "👑 Dueño",
-          value: `${owner}`,
-          inline: true
-        },
-
-        {
-          name: "🆔 ID",
-          value: `\`${guild.id}\``,
-          inline: true
-        },
-
-        {
-          name: "👥 Miembros",
-          value: `\`${memberCount}\``,
-          inline: true
-        },
-
-        {
-          name: "💬 Texto",
-          value: `\`${textChannels}\``,
-          inline: true
-        },
-
-        {
-          name: "🔊 Voz",
-          value: `\`${voiceChannels}\``,
-          inline: true
-        },
-
-        {
-          name: "📅 Creado",
-          value: createdAt,
-          inline: false
-        },
-
-        {
-          name: `🎭 Roles (${roles.length})`,
-          value:
-            rolePages[page] ||
-            "Sin roles",
-          inline: false
-        }
-
-      )
-
-      .setFooter({
-        text:
-          `${guild.name} • Página ${page + 1}/${rolePages.length || 1}`,
-        iconURL:
-          guild.iconURL({ dynamic: true }) ||
-          null
-      })
-
-      .setTimestamp();
-
+  // 📦 Container
+  const createContainer = (page) => {
+    return buildLogContainer({
+      color: "#5865F2",
+      title: "📊 Información del Servidor",
+      thumbnail: guild.iconURL({ dynamic: true, size: 4096 }),
+      fields: [
+        { name: "👑 Dueño", value: `${owner}` },
+        { name: "🆔 ID", value: `\`${guild.id}\`` },
+        { name: "👥 Miembros", value: `\`${memberCount}\`` },
+        { name: "💬 Texto", value: `\`${textChannels}\`` },
+        { name: "🔊 Voz", value: `\`${voiceChannels}\`` },
+        { name: "📅 Creado", value: createdAt },
+        { name: `🎭 Roles (${roles.length})`, value: rolePages[page] || "Sin roles" }
+      ],
+      footer: `${guild.name} • Página ${page + 1}/${rolePages.length || 1}`
+    });
   };
 
-  // 🔘 Botones
-  const row = new ActionRowBuilder()
-
-    .addComponents(
-
-      new ButtonBuilder()
-        .setCustomId("prev")
-        .setLabel("⬅️")
-        .setStyle(ButtonStyle.Secondary),
-
-      new ButtonBuilder()
-        .setCustomId("next")
-        .setLabel("➡️")
-        .setStyle(ButtonStyle.Secondary)
-
-    );
+  // 🔘 Botones (sin cambios, funcionan igual dentro o fuera de V2)
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId("prev").setLabel("⬅️").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId("next").setLabel("➡️").setStyle(ButtonStyle.Secondary)
+  );
 
   // 🚀 Enviar
   const msg = await interaction.reply({
-
-    embeds: [createEmbed(currentPage)],
-
-    components:
-      rolePages.length > 1
-        ? [row]
-        : [],
-
+    components: rolePages.length > 1
+      ? [createContainer(currentPage), row]
+      : [createContainer(currentPage)],
+    flags: MessageFlags.IsComponentsV2,
     fetchReply: true
-
   });
 
-  // ❌ Si solo hay una página
   if (rolePages.length <= 1) return;
 
-  // 🎛️ Collector
-  const collector =
-    msg.createMessageComponentCollector({
-
-      componentType: ComponentType.Button,
-
-      time: 120000
-
-    });
+  const collector = msg.createMessageComponentCollector({
+    componentType: ComponentType.Button,
+    time: 120000
+  });
 
   collector.on("collect", async i => {
 
     if (i.user.id !== interaction.user.id) {
-
       return i.reply({
-        content:
-          "❌ Solo quien ejecutó el comando puede usar esto",
+        content: "❌ Solo quien ejecutó el comando puede usar esto",
         flags: 64
       });
-
     }
 
-    // ⬅️
     if (i.customId === "prev") {
-
       currentPage--;
-
-      if (currentPage < 0) {
-        currentPage = rolePages.length - 1;
-      }
-
+      if (currentPage < 0) currentPage = rolePages.length - 1;
     }
 
-    // ➡️
     if (i.customId === "next") {
-
       currentPage++;
-
-      if (currentPage >= rolePages.length) {
-        currentPage = 0;
-      }
-
+      if (currentPage >= rolePages.length) currentPage = 0;
     }
 
-    // 🔄 Actualizar
     await i.update({
-
-      embeds: [createEmbed(currentPage)],
-
-      components: [row]
-
+      components: [createContainer(currentPage), row],
+      flags: MessageFlags.IsComponentsV2
     });
 
   });
 
-  // ⏳ Desactivar botones
   collector.on("end", async () => {
 
-    const disabledRow = new ActionRowBuilder()
-
-      .addComponents(
-
-        new ButtonBuilder()
-          .setCustomId("prev")
-          .setLabel("⬅️")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(true),
-
-        new ButtonBuilder()
-          .setCustomId("next")
-          .setLabel("➡️")
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(true)
-
-      );
+    const disabledRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId("prev").setLabel("⬅️").setStyle(ButtonStyle.Secondary).setDisabled(true),
+      new ButtonBuilder().setCustomId("next").setLabel("➡️").setStyle(ButtonStyle.Secondary).setDisabled(true)
+    );
 
     await msg.edit({
-      components: [disabledRow]
+      components: [createContainer(currentPage), disabledRow],
+      flags: MessageFlags.IsComponentsV2
     }).catch(() => {});
 
   });
 
-      }
+}

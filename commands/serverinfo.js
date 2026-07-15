@@ -46,9 +46,9 @@ export async function execute(interaction) {
 
   let currentPage = 0;
 
-  // 📦 Container
-  const createContainer = (page) => {
-    return buildLogContainer({
+  // 📦 Container (con los botones incrustados adentro, no como fila aparte)
+  const createContainer = (page, actionRow) => {
+    const container = buildLogContainer({
       color: "#5865F2",
       title: "📊 Información del Servidor",
       thumbnail: guild.iconURL({ dynamic: true, size: 4096 }),
@@ -63,9 +63,15 @@ export async function execute(interaction) {
       ],
       footer: `${guild.name} • Página ${page + 1}/${rolePages.length || 1}`
     });
+
+    if (actionRow) {
+      container.addActionRowComponents(actionRow);
+    }
+
+    return container;
   };
 
-  // 🔘 Botones (sin cambios, funcionan igual dentro o fuera de V2)
+  // 🔘 Botones (van dentro del container mismo, no en un componente aparte)
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId("prev").setLabel("⬅️").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId("next").setLabel("➡️").setStyle(ButtonStyle.Secondary)
@@ -73,9 +79,7 @@ export async function execute(interaction) {
 
   // 🚀 Enviar
   const msg = await interaction.reply({
-    components: rolePages.length > 1
-      ? [createContainer(currentPage), row]
-      : [createContainer(currentPage)],
+    components: [createContainer(currentPage, rolePages.length > 1 ? row : null)],
     flags: MessageFlags.IsComponentsV2,
     fetchReply: true
   });
@@ -107,7 +111,7 @@ export async function execute(interaction) {
     }
 
     await i.update({
-      components: [createContainer(currentPage), row],
+      components: [createContainer(currentPage, row)],
       flags: MessageFlags.IsComponentsV2
     });
 
@@ -121,7 +125,7 @@ export async function execute(interaction) {
     );
 
     await msg.edit({
-      components: [createContainer(currentPage), disabledRow],
+      components: [createContainer(currentPage, disabledRow)],
       flags: MessageFlags.IsComponentsV2
     }).catch(() => {});
 

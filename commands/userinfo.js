@@ -1,7 +1,8 @@
 import {
   SlashCommandBuilder,
-  EmbedBuilder
+  MessageFlags
 } from "discord.js";
+import { buildLogContainer } from "../utils/componentsV2.js";
 
 export const data = new SlashCommandBuilder()
 
@@ -17,145 +18,57 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
 
-  // 👤 Usuario
-  const user =
-    interaction.options.getUser("usuario") ||
-    interaction.user;
+  const user = interaction.options.getUser("usuario") || interaction.user;
+  const member = interaction.guild.members.cache.get(user.id);
 
-  // 🧠 Miembro
-  const member =
-    interaction.guild.members.cache.get(user.id);
+  // 🎭 Roles
+  let roles = "Ninguno";
 
-// 🎭 Roles
-let roles = "Ninguno";
+  if (member) {
 
-if (member) {
+    const roleList = member.roles.cache
+      .filter(r => r.id !== interaction.guild.id)
+      .sort((a, b) => b.position - a.position)
+      .map(r => `> ${r}`);
 
-  const roleList = member.roles.cache
+    if (roleList.length <= 0) {
+      roles = "Ninguno";
+    } else {
+      const visibleRoles = roleList.slice(0, 15);
+      roles = visibleRoles.join("\n");
 
-    .filter(r => r.id !== interaction.guild.id)
-
-    .sort((a, b) => b.position - a.position)
-
-    .map(r => `> ${r}`);
-
-  // 📋 Sin roles
-  if (roleList.length <= 0) {
-
-    roles = "Ninguno";
-
-  } else {
-
-    // 🔥 Máximo visible
-    const visibleRoles = roleList.slice(0, 15);
-
-    roles = visibleRoles.join("\n");
-
-    // ➕ Extra
-    if (roleList.length > 15) {
-
-      roles +=
-        `\n\n> Y ${roleList.length - 15} roles más...`;
-
+      if (roleList.length > 15) {
+        roles += `\n\n> Y ${roleList.length - 15} roles más...`;
+      }
     }
 
   }
 
-}
+  const fields = [
+    { name: "🆔 ID", value: `\`${user.id}\`` },
+    { name: "🤖 Bot", value: user.bot ? "Sí" : "No" },
+    { name: "📅 Cuenta creada", value: `<t:${Math.floor(user.createdTimestamp / 1000)}:F>` }
+  ];
 
-
-  // 🎨 EMBED PRO
-  const embed = new EmbedBuilder()
-
-.setColor(member.displayHexColor || "#5865F2")
-
-    .setAuthor({
-      name: `${user.tag}`,
-      iconURL:
-        user.displayAvatarURL({
-          dynamic: true
-        })
-    })
-
-    .setThumbnail(
-      user.displayAvatarURL({
-        dynamic: true,
-        size: 4096
-      })
-    )
-
-    .setDescription(
-      `### 👤 Información de Usuario\n` +
-      `> Información detallada del miembro`
-    )
-
-    .addFields(
-
-      {
-        name: "🆔 ID",
-        value: `\`${user.id}\``,
-        inline: true
-      },
-
-      {
-        name: "🤖 Bot",
-        value: user.bot ? "Sí" : "No",
-        inline: true
-      },
-
-      {
-        name: "📅 Cuenta creada",
-        value:
-          `<t:${Math.floor(user.createdTimestamp / 1000)}:F>`,
-        inline: false
-      }
-
-    );
-
-  // 📥 Datos del servidor
   if (member) {
-
-    embed.addFields(
-
-      {
-        name: "📥 Entró al servidor",
-        value:
-          `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>`,
-        inline: false
-      },
-
-      {
-        name: `🎭 Roles (${member.roles.cache.size - 1})`,
-        value: roles,
-        inline: false
-      }
-
+    fields.push(
+      { name: "📥 Entró al servidor", value: `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>` },
+      { name: `🎭 Roles (${member.roles.cache.size - 1})`, value: roles }
     );
-
   }
 
-  // 🏷️ Footer PRO
-  embed
+  const container = buildLogContainer({
+    color: member?.displayHexColor || "#5865F2",
+    title: "👤 Información de Usuario",
+    thumbnail: user.displayAvatarURL({ dynamic: true, size: 4096 }),
+    fields,
+    footer: interaction.guild.name
+  });
 
-    .setFooter({
-
-      text: interaction.guild.name,
-
-      iconURL:
-        interaction.guild.iconURL({
-          dynamic: true
-        }) ||
-        user.displayAvatarURL({
-          dynamic: true
-        })
-
-    })
-
-    .setTimestamp();
-
-  // 🚀 Respuesta
   await interaction.reply({
-    embeds: [embed]
+    components: [container],
+    flags: MessageFlags.IsComponentsV2
   });
 
 }
+
